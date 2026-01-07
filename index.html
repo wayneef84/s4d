@@ -2,76 +2,140 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dad's Slots v1.0</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dad's Casino</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #000;
+            color: #ffd700;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            background-image: radial-gradient(circle, #2a0a40 0%, #000 100%);
+        }
+        
+        h1 { 
+            font-size: 2.5rem; 
+            margin-bottom: 5px; 
+            text-transform: uppercase; 
+            letter-spacing: 5px;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 40px;
+            font-size: 0.9rem;
+        }
+        
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .game-card {
+            background: linear-gradient(145deg, #1a0a2e, #0d0518);
+            border: 2px solid #b8860b;
+            border-radius: 15px;
+            padding: 25px 15px;
+            text-decoration: none;
+            color: #ffd700;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.3);
+            border-color: #ffd700;
+        }
+        
+        .game-card.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            border-color: #444;
+        }
+        
+        .game-icon {
+            font-size: 3rem;
+        }
+        
+        .game-name {
+            font-weight: bold;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .game-status {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+        
+        .game-card:not(.disabled) .game-status {
+            color: #4ade80;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            color: #555;
+            font-size: 0.75rem;
+        }
+        
+        .footer a {
+            color: #b8860b;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="game-wrapper">
-        <div id="toastContainer" class="toast-container"></div>
+    <h1>🎰 Dad's Casino</h1>
+    <p class="subtitle">Version 2.0 • Pick Your Game</p>
+    
+    <div class="game-grid">
+        <a href="games/slots.html" class="game-card">
+            <span class="game-icon">🎰</span>
+            <span class="game-name">Slots</span>
+            <span class="game-status">● Play Now</span>
+        </a>
         
-        <div class="top-bar">
-            <button class="sys-btn" onclick="toggleRules()">ℹ️ RULES</button>
-            <select id="themeSelector" class="theme-select" onchange="changeTheme(this.value)">
-                </select>
-            <button class="sys-btn warning" onclick="resetGame()">↻ RESET</button>
+        <div class="game-card disabled">
+            <span class="game-icon">🃏</span>
+            <span class="game-name">Blackjack</span>
+            <span class="game-status">Coming Soon</span>
         </div>
-
-        <div class="header">
-            <div class="stats-box">
-                <div class="label">BALANCE</div>
-                <div id="coinCount" class="value highlight">$100.00</div>
-            </div>
-            <div class="stats-box">
-                <div class="label">WIN</div>
-                <div id="totalBet" class="value">$0.00</div>
-            </div>
+        
+        <div class="game-card disabled">
+            <span class="game-icon">🎲</span>
+            <span class="game-name">Craps</span>
+            <span class="game-status">Coming Soon</span>
         </div>
-
-        <div class="game-container">
-            <canvas id="slotCanvas"></canvas>
-            
-            <div id="winOverlay" class="win-overlay"></div>
+        
+        <div class="game-card disabled">
+            <span class="game-icon">♠️</span>
+            <span class="game-name">Video Poker</span>
+            <span class="game-status">Coming Soon</span>
         </div>
-
-        <div class="controls">
-            <div class="control-group">
-                <button class="circle-btn" onclick="changeBet(-0.20)">-</button>
-                <div class="display-panel">
-                    <span class="label">BET</span>
-                    <span id="betAmount">$1.00</span>
-                </div>
-                <button class="circle-btn" onclick="changeBet(0.20)">+</button>
-            </div>
-
-            <button id="spinButton" class="spin-btn" onclick="spin()">SPIN</button>
-
-            <div class="control-group">
-                <button class="circle-btn" onclick="changePaylines(-1)">-</button>
-                <div class="display-panel">
-                    <span class="label">LINES</span>
-                    <span id="paylineCount">20</span>
-                </div>
-                <button class="circle-btn" onclick="changePaylines(1)">+</button>
-            </div>
-        </div>
-
-        <div id="rulesModal" class="modal-overlay" onclick="toggleRules()">
-            <div class="modal-content" onclick="event.stopPropagation()">
-                <div class="modal-header">
-                    <h2>PAYTABLE</h2>
-                    <button class="close-btn" onclick="toggleRules()">×</button>
-                </div>
-                <div id="paytableContent" class="modal-body"></div>
-                <div class="modal-footer">
-                    <p>Wilds (W) substitute for all symbols except Scatters.</p>
-                </div>
-            </div>
-        </div>
-
     </div>
     
-    <script src="themes.js"></script>
-    <script src="script.js"></script>
+    <div class="footer">
+        Made with ❤️ for Dad
+    </div>
 </body>
 </html>
