@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Neon Serpent | Fong Family Arcade</title>
     <style>
         * {
@@ -11,14 +11,15 @@
             user-select: none;
         }
         body {
-            /* Default to Neon Theme */
             background-color: #240a1e; 
             color: #ff66ff;
             font-family: 'Segoe UI', 'Roboto', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
+            /* Dynamic Viewport Height for Mobile Browsers */
             height: 100vh;
+            height: 100dvh; 
             margin: 0;
             overflow: hidden;
             transition: background-color 0.3s;
@@ -27,7 +28,7 @@
         /* --- HEADER --- */
         .game-header {
             width: 100%;
-            padding: 15px 20px;
+            padding: 10px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -48,13 +49,13 @@
         .title-group { text-align: right; }
         .game-title {
             margin: 0;
-            font-size: 1rem;
+            font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 2px;
             text-shadow: 0 0 8px currentColor;
         }
         .score-display {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
             font-variant-numeric: tabular-nums;
         }
@@ -68,6 +69,7 @@
             align-items: center;
             width: 100%;
             position: relative;
+            min-height: 0; 
         }
 
         .canvas-wrapper {
@@ -87,13 +89,22 @@
         /* --- CONTROLS --- */
         .controls-area {
             width: 100%;
-            height: 140px; 
+            height: 120px; 
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 40px;
-            padding-bottom: 20px;
+            padding: 0 30px;
+            /* iPhone Home Bar Safety */
+            padding-bottom: env(safe-area-inset-bottom, 20px); 
             flex-shrink: 0;
+            z-index: 5;
+        }
+
+        /* DESKTOP MODE: Hide controls on wide screens */
+        @media (min-width: 800px) {
+            .controls-area {
+                display: none;
+            }
         }
 
         .control-btn {
@@ -168,7 +179,7 @@
         }
 
         .mode-btn {
-            flex: 1; /* Distribute space evenly */
+            flex: 1;
             padding: 10px 5px;
             background: transparent;
             border: none;
@@ -177,7 +188,7 @@
             cursor: pointer;
             border-radius: 6px;
             text-transform: uppercase;
-            font-size: 0.8rem; /* Slightly smaller to fit "Color Eater" */
+            font-size: 0.8rem;
             white-space: nowrap;
         }
 
@@ -192,7 +203,7 @@
             font-size: 0.9rem;
             color: rgba(255,255,255,0.8);
             font-style: italic;
-            height: 40px; /* Fixed height to prevent jumping */
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -253,7 +264,7 @@
                 <button id="retryBtn" class="start-btn">RETRY</button>
             </div>
 
-            <div id="startScreen" class="overlay active" style="background: rgba(0,0,0,0.85);">
+            <div id="startScreen" class="overlay active" style="background: rgba(0,0,0,0.6);">
                 <div style="margin-bottom:10px; font-weight:bold; letter-spacing:1px; color:inherit; opacity:0.8;">SELECT MODE</div>
                 
                 <div class="mode-container">
@@ -285,10 +296,12 @@
         const gameOverScreen = document.getElementById('gameOverScreen');
         const startScreen = document.getElementById('startScreen');
         const modeDesc = document.getElementById('modeDesc');
+        const controlsArea = document.querySelector('.controls-area');
         const body = document.body;
 
         // Variables
         let snake, direction, food, score, gameLoop, isGameOver;
+        let isAttractMode = false; 
         let pendingDirection;
         let currentMode = 'neon'; 
         let activeColor = '#ffffff';
@@ -297,7 +310,6 @@
         const tileCount = 20; 
         let gridSize; 
         
-        // Descriptions
         const DESCRIPTIONS = {
             neon: "Classic arcade action with a cyber glow.",
             chameleon: "You are what you eat! Change colors instantly.",
@@ -306,9 +318,22 @@
 
         // --- RESIZE LOGIC ---
         function resize() {
-            const availableHeight = window.innerHeight - 240;
+            // Check if controls are hidden (Desktop Mode)
+            const controlsHidden = getComputedStyle(controlsArea).display === 'none';
+            
+            // Calculate available height
+            // Header(~50) + Padding(~40) + Controls (if visible)
+            const headerHeight = 60;
+            const controlsHeight = controlsHidden ? 0 : 120;
+            const padding = 40;
+
+            const availableHeight = window.innerHeight - (headerHeight + controlsHeight + padding);
             const availableWidth = window.innerWidth - 40;
-            const size = Math.min(availableWidth, availableHeight, 400); 
+            
+            // Allow larger max size on desktop
+            const maxSize = controlsHidden ? 600 : 400;
+
+            const size = Math.min(availableWidth, availableHeight, maxSize); 
             
             canvas.width = size;
             canvas.height = size;
@@ -323,13 +348,10 @@
         window.setMode = function(mode) {
             currentMode = mode;
             body.className = `theme-${mode}`;
-            
-            // Update Description
             modeDesc.textContent = DESCRIPTIONS[mode];
 
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.remove('active');
-                // Simple check to toggle active state based on text content match
                 if(mode === 'neon' && btn.textContent === 'Neon') btn.classList.add('active');
                 if(mode === 'chameleon' && btn.textContent === 'Color Eater') btn.classList.add('active');
                 if(mode === 'retro' && btn.textContent === 'B&W') btn.classList.add('active');
@@ -338,35 +360,44 @@
             const title = document.querySelector('.game-title');
             if(mode === 'neon') title.textContent = "Neon Serpent";
             if(mode === 'retro') title.textContent = "Snake_V1.0";
-            if(mode === 'chameleon') title.textContent = "Color Eater"; // Title update
+            if(mode === 'chameleon') title.textContent = "Color Eater";
             
-            if(snake) draw();
+            startAttractMode();
         }
 
         // --- GAME ENGINE ---
-        function initGame() {
+        function resetState() {
             const startColor = currentMode === 'chameleon' ? '#ffffff' : null;
-            
             snake = [
                 { x: 10, y: 15, color: startColor },
                 { x: 10, y: 16, color: startColor },
                 { x: 10, y: 17, color: startColor }
             ];
-            
             direction = { x: 0, y: -1 }; 
             pendingDirection = { x: 0, y: -1 };
-            activeColor = '#ffffff'; 
-            
+            activeColor = '#ffffff';
             food = randomFood(); 
             score = 0;
             scoreEl.textContent = 0;
             isGameOver = false;
+        }
+
+        function initGame() {
+            isAttractMode = false; 
+            resetState();
             
             gameOverScreen.classList.remove('active');
             startScreen.classList.remove('active');
             
             if (gameLoop) clearInterval(gameLoop);
             gameLoop = setInterval(gameTick, 110); 
+        }
+
+        function startAttractMode() {
+            isAttractMode = true;
+            resetState();
+            if (gameLoop) clearInterval(gameLoop);
+            gameLoop = setInterval(gameTick, 80); 
         }
 
         function randomFood() {
@@ -383,26 +414,62 @@
             }
         }
 
+        // --- BOT LOGIC ---
+        function getBotMove() {
+            const head = snake[0];
+            const moves = [
+                { x: 0, y: -1 }, { x: 0, y: 1 }, { x: -1, y: 0 }, { x: 1, y: 0 }
+            ];
+            const validMoves = moves.filter(m => {
+                const nx = head.x + m.x;
+                const ny = head.y + m.y;
+                if (nx < 0 || nx >= tileCount || ny < 0 || ny >= tileCount) return false;
+                if (snake.some(s => s.x === nx && s.y === ny)) return false;
+                if (m.x === -direction.x && m.y === -direction.y) return false;
+                return true;
+            });
+
+            if (validMoves.length === 0) return direction; 
+
+            validMoves.sort((a, b) => {
+                const distA = Math.abs((head.x + a.x) - food.x) + Math.abs((head.y + a.y) - food.y);
+                const distB = Math.abs((head.x + b.x) - food.x) + Math.abs((head.y + b.y) - food.y);
+                return distA - distB;
+            });
+            return validMoves[0];
+        }
+
         function gameTick() {
-            direction = pendingDirection;
+            if (isAttractMode) {
+                direction = getBotMove();
+            } else {
+                direction = pendingDirection;
+            }
+
             const head = { 
                 x: snake[0].x + direction.x, 
                 y: snake[0].y + direction.y,
                 color: activeColor 
             };
 
-            // Collisions
             if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || 
                 snake.some(seg => seg.x === head.x && seg.y === head.y)) {
-                return endGame();
+                if (isAttractMode) {
+                    startAttractMode(); 
+                    return;
+                } else {
+                    return endGame();
+                }
             }
 
             snake.unshift(head);
 
             if (head.x === food.x && head.y === food.y) {
-                score++;
-                scoreEl.textContent = score;
-                if(navigator.vibrate) navigator.vibrate(50);
+                if (!isAttractMode) {
+                    score++;
+                    scoreEl.textContent = score;
+                    if(navigator.vibrate) navigator.vibrate(50);
+                }
                 
                 if (currentMode === 'chameleon') {
                     activeColor = food.color;
@@ -418,24 +485,18 @@
 
         function draw() {
             if(!snake) return;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Snake
             snake.forEach((seg, i) => {
                 let fill, blur, shadowColor;
 
                 if (currentMode === 'retro') {
-                    fill = '#ffffff';
-                    blur = 0;
+                    fill = '#ffffff'; blur = 0;
                 } else if (currentMode === 'chameleon') {
-                    fill = seg.color || '#fff';
-                    blur = 10;
-                    shadowColor = fill;
+                    fill = seg.color || '#fff'; blur = 10; shadowColor = fill;
                 } else {
                     if (i === 0) {
-                        fill = '#ffffff'; 
-                        blur = 20; shadowColor = "#ff00cc";
+                        fill = '#ffffff'; blur = 20; shadowColor = "#ff00cc";
                     } else {
                         const hue = 320 - (i * 4); 
                         fill = `hsl(${hue}, 100%, 50%)`;
@@ -457,7 +518,6 @@
                 );
             });
 
-            // Draw Food
             ctx.shadowBlur = 0;
             let foodFill;
             if (currentMode === 'retro') {
@@ -473,7 +533,6 @@
             }
 
             ctx.fillStyle = foodFill;
-            
             if (currentMode === 'retro') {
                 if(food) ctx.fillRect(food.x * gridSize + 4, food.y * gridSize + 4, gridSize - 8, gridSize - 8);
             } else {
@@ -483,7 +542,6 @@
                 ctx.arc(cx, cy, gridSize/2 - 4, 0, Math.PI * 2);
                 ctx.fill();
             }
-            
             ctx.shadowBlur = 0;
         }
 
@@ -496,13 +554,13 @@
         }
 
         function turnLeft() {
-            if (isGameOver) return;
+            if (isGameOver || isAttractMode) return;
             const newDir = { x: direction.y, y: -direction.x };
             pendingDirection = newDir;
         }
 
         function turnRight() {
-            if (isGameOver) return;
+            if (isGameOver || isAttractMode) return;
             const newDir = { x: -direction.y, y: direction.x };
             pendingDirection = newDir;
         }
@@ -524,7 +582,10 @@
         document.getElementById('retryBtn').addEventListener('click', () => {
             gameOverScreen.classList.remove('active');
             startScreen.classList.add('active');
+            startAttractMode(); 
         });
+
+        startAttractMode();
 
     </script>
 </body>
