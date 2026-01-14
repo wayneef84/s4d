@@ -134,7 +134,14 @@ var BlackjackRuleset = {
         } 
         else if (action === 'stand') {
             actor._hasStood = true; // Mark as done
-            result.nextActor = this.getNextActor(gameState); // Find next person
+
+            // If dealer stands, they're done - return null to end round
+            if (actorId === 'dealer') {
+                result.nextActor = null;
+            } else {
+                // Player stood, find next actor
+                result.nextActor = this.getNextActor(gameState);
+            }
         }
         else if (action === 'double') {
              // Deduct bet (handled by engine usually, or we trigger DEDUCT)
