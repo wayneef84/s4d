@@ -23,10 +23,12 @@ var BlackjackRuleset = {
     resetPilesEachRound: false,
     
     // User Configurable Parameters
-    deckCount: 6,           
-    targetScore: 21,        
-    dealerStandThreshold: 17, 
+    deckCount: 6,
+    targetScore: 21,
+    dealerStandThreshold: 17,
     blackjackPayout: 1.5,
+    insuranceEnabled: true,     // Allow insurance bets
+    insurancePayout: 2.0,       // Insurance pays 2:1
     
     // ========================================================================
     // DECK BUILDING
@@ -168,11 +170,12 @@ var BlackjackRuleset = {
 
     /**
      * Determines who acts next.
+     * BUST SUPPRESSION: If all players are busted/stood, return null to skip dealer turn.
      */
     getNextActor: function(gameState) {
         var activePlayers = gameState.players;
         var current = gameState.activeActorId; // Engine uses this
-        
+
         // 1. Initial State (Start of Round)
         if (!current || current === 'dealer') {
             // Find first eligible human
@@ -181,28 +184,44 @@ var BlackjackRuleset = {
                     return activePlayers[i].id;
                 }
             }
+            // If no players can act at start, skip to dealer
             return 'dealer';
         }
 
         // 2. Player Turn
         var playerIndex = activePlayers.findIndex(function(p) { return p.id === current; });
-        
+
         if (playerIndex !== -1) {
             var player = activePlayers[playerIndex];
-            
+
             // If current player can still act (didn't bust/stand), they keep turn
             if (this._canPlayerAct(player)) {
                 return player.id;
             }
-            
+
             // Move to next player
             for (var j = playerIndex + 1; j < activePlayers.length; j++) {
                 if (this._canPlayerAct(activePlayers[j])) {
                     return activePlayers[j].id;
                 }
             }
-            
-            // No players left
+
+            // BUST SUPPRESSION: Check if ALL players are busted before going to dealer
+            var anyPlayerAlive = false;
+            for (var k = 0; k < activePlayers.length; k++) {
+                var val = this.evaluateHand(activePlayers[k].hand.contents);
+                if (val.best <= this.targetScore) {
+                    anyPlayerAlive = true;
+                    break;
+                }
+            }
+
+            // If all players busted, return null to skip dealer turn and go straight to resolution
+            if (!anyPlayerAlive) {
+                return null;
+            }
+
+            // At least one player has a valid hand, proceed to dealer
             return 'dealer';
         }
 
@@ -234,8 +253,15 @@ var BlackjackRuleset = {
      */
     _canDealerAct: function(dealer) {
         var val = this.evaluateHand(dealer.hand.contents);
-        if (val.best < this.dealerStandThreshold) return true;
-        return false;
+
+        // Dealer MUST stop if busted
+        if (val.best > this.targetScore) return false;
+
+        // Dealer MUST stop if at or above stand threshold
+        if (val.best >= this.dealerStandThreshold) return false;
+
+        // Dealer continues if below stand threshold
+        return true;
     },
 
     // ========================================================================
@@ -304,9 +330,36 @@ var BlackjackRuleset = {
     },
     
     // ========================================================================
+    // INSURANCE LOGIC
+    // ========================================================================
+
+    /**
+     * Check if insurance should be offered to players.
+     * Insurance is offered when dealer's up card is an Ace.
+     */
+    shouldOfferInsurance: function(gameState) {
+        if (!this.insuranceEnabled) return false;
+
+        var dealer = gameState.dealer;
+        if (!dealer || dealer.hand.count < 1) return false;
+
+        // Check if dealer's up card is an Ace
+        var upCard = dealer.hand.contents[0];
+        return upCard.rank === Rank.ACE;
+    },
+
+    /**
+     * Calculate insurance payout if dealer has blackjack.
+     * Returns amount to pay back (insurance bet * payout multiplier).
+     */
+    calculateInsurancePayout: function(insuranceBet) {
+        return Math.floor(insuranceBet * this.insurancePayout);
+    },
+
+    // ========================================================================
     // WIN CONDITIONS
     // ========================================================================
-    
+
     checkWinCondition: function(gameState) {
         // 1. Dealer Blackjack
         var dealer = gameState.dealer;

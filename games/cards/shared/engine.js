@@ -286,45 +286,59 @@ class GameEngine {
     
     /**
      * Handle the dealing phase.
+     * TERMINAL CHECK GATE: After dealing, check if round should end immediately (e.g., dealer blackjack).
      */
     _handleDealing() {
         const dealSequence = this.ruleset.getDealSequence(this.getGameState());
-        
+
         dealSequence.forEach(deal => {
             this._executeDeal(deal);
         });
-        
+
+        // TERMINAL CHECK GATE: After all initial cards are dealt, check for immediate end (dealer blackjack, etc.)
+        // If checkWinCondition already transitioned to RESOLUTION, skip turn logic
+        if (this.state === GameState.RESOLUTION || this.state === GameState.GAME_OVER) {
+            return;
+        }
+
         // Determine next state after dealing
         const nextActor = this.ruleset.getNextActor(this.getGameState());
         this.activeActorId = nextActor; // Fixed: nextActor returns ID directly, not object
-        
+
+        // If no next actor (e.g., all players busted), go to resolution
+        if (!nextActor) {
+            this.transitionTo(GameState.RESOLUTION);
+            return;
+        }
+
         // Determine type of actor for state transition
         const actorObj = this._getActor(this.activeActorId);
         const nextState = (actorObj && actorObj.type === 'human') ? GameState.PLAYER_TURN : GameState.OPPONENT_TURN;
-        
+
         this.transitionTo(nextState);
     }
     
     /**
      * Execute a single deal action.
      * FIX: Use _getActor to find target (handles Dealer & Players), and ensure fromPile exists.
+     * TERMINAL CHECK GATE: After every card deal, check for immediate win conditions.
      */
     _executeDeal(deal) {
         const fromPile = this.piles[deal.from];
         // Use _getActor instead of _getPlayer so we can find the Dealer
         const toPile = deal.toPlayer ? this._getActor(deal.to)?.hand : this.piles[deal.to];
-        
+
         if (!fromPile || !toPile) {
             this._log('Invalid deal target', deal, 'error');
             return;
         }
-        
+
         for (let i = 0; i < (deal.count || 1); i++) {
             const card = fromPile.give(0);
             if (!card) break;
-            
+
             toPile.receive(card, -1);
-            
+
             this._emit({
                 type: ActionType.DEAL,
                 from: { type: 'pile', id: deal.from },
@@ -332,6 +346,9 @@ class GameEngine {
                 card: card.toJSON(),
                 faceUp: deal.faceUp ?? true
             });
+
+            // TERMINAL CHECK GATE: Check for immediate win condition after EVERY card
+            this._checkForImmediateWin();
         }
     }
     
@@ -466,21 +483,22 @@ class GameEngine {
     
     /**
      * Execute a deal action from ruleset.
+     * TERMINAL CHECK GATE: After every card deal, check for immediate win conditions.
      */
     _executeDealAction(action) {
         const fromPile = this.piles[action.from];
-        const toTarget = action.toPlayer 
-            ? this._getActor(action.to)?.hand 
+        const toTarget = action.toPlayer
+            ? this._getActor(action.to)?.hand
             : this.piles[action.to];
-        
+
         if (!fromPile || !toTarget) return;
-        
+
         for (let i = 0; i < (action.count || 1); i++) {
             const card = fromPile.give(0);
             if (!card) break;
-            
+
             toTarget.receive(card, -1);
-            
+
             this._emit({
                 type: ActionType.DEAL,
                 from: { type: 'pile', id: action.from },
@@ -488,6 +506,9 @@ class GameEngine {
                 card: card.toJSON(),
                 faceUp: action.faceUp ?? true
             });
+
+            // TERMINAL CHECK GATE: Check for immediate win condition after EVERY card
+            this._checkForImmediateWin();
         }
     }
     

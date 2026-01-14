@@ -170,6 +170,25 @@
             font-weight: bold;
             border: 1px solid rgba(255,255,255,0.2);
         }
+
+        /* Hide value bubble if no cards or value is 0 */
+        .hand-value.hidden-value {
+            display: none;
+        }
+
+        /* Player area: Bottom-Up layout (Cards → Value → Label) */
+        #playerArea {
+            flex-direction: column-reverse;
+        }
+
+        #playerArea h3 {
+            margin: 10px 0 0 0; /* Flip margin for bottom label */
+        }
+
+        #playerArea .hand-value {
+            margin-top: 0;
+            margin-bottom: 8px; /* Space below value bubble */
+        }
         
         .hand-value.bust { background: #ef4444; border-color: #ff0000; }
         .hand-value.blackjack { background: #ffd700; color: #000; border-color: #fff; }
@@ -325,6 +344,119 @@
         .reset-funds { background: #ef4444; color: white; }
         .close-btn { background: #ffd700; color: black; }
 
+        /* Debug Overlay */
+        .debug-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 3000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        .debug-panel {
+            background: #0f172a;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            border: 2px solid #ef4444;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+        }
+        .debug-panel h2 {
+            color: #ef4444;
+            margin: 0 0 15px 0;
+            font-size: 1.3rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .debug-panel p {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .debug-commands {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .debug-btn {
+            background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+            border: 1px solid #475569;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .debug-btn:hover {
+            background: linear-gradient(180deg, #475569 0%, #334155 100%);
+            border-color: #64748b;
+        }
+        .debug-btn:active {
+            transform: scale(0.98);
+        }
+        .debug-btn.danger {
+            background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
+            border-color: #991b1b;
+            color: #fca5a5;
+        }
+        .debug-close {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* Insurance Modal */
+        .insurance-modal {
+            text-align: center;
+            border: 2px solid #fbbf24;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.3);
+        }
+        .insurance-modal h2 {
+            color: #fbbf24;
+            margin: 0 0 15px 0;
+            font-size: 1.5rem;
+        }
+        .insurance-modal p {
+            color: #e2e8f0;
+            margin: 10px 0;
+            font-size: 0.95rem;
+        }
+        .insurance-info {
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #475569;
+            font-size: 0.9rem;
+        }
+        .insurance-info span {
+            color: #fbbf24;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .insurance-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .insurance-actions .action-btn {
+            flex: 1;
+        }
+
     </style>
 </head>
 <body>
@@ -348,9 +480,9 @@
         </div>
 
         <div class="hand-area" id="playerArea">
-            <h3>You</h3>
             <div class="cards-container" id="playerCards"></div>
             <div class="hand-value" id="playerValue">-</div>
+            <h3>You</h3>
         </div>
     </main>
 
@@ -390,6 +522,34 @@
             <button id="btnResetFunds" class="full-btn reset-funds">Reset Funds ($1000)</button>
             <button id="btnResetRules" class="full-btn reset-rules">Restore Default Rules</button>
             <button id="btnCloseSettings" class="full-btn close-btn">Save & Close</button>
+        </div>
+    </div>
+
+    <div id="debugOverlay" class="debug-overlay hidden">
+        <div class="debug-panel">
+            <h2>⚠️ Debug Console</h2>
+            <p>Force specific game states for testing</p>
+            <div class="debug-commands">
+                <button class="debug-btn" id="debugPlayerBJ">🃏 Force Player Blackjack</button>
+                <button class="debug-btn" id="debugPlayerBust">💥 Force Player Bust (Next Hit)</button>
+                <button class="debug-btn" id="debugDealerBust">💀 Force Dealer Bust</button>
+                <button class="debug-btn" id="debugTie">🤝 Force Tie (Match Scores)</button>
+                <button class="debug-btn danger" id="debugResetBank">💰 Reset Bank to $1000</button>
+            </div>
+            <button class="debug-close" id="debugClose">Close Debug Console</button>
+        </div>
+    </div>
+
+    <div id="insuranceModal" class="modal-overlay hidden">
+        <div class="modal insurance-modal">
+            <h2>🛡️ Insurance?</h2>
+            <p>Dealer shows an Ace. Would you like to buy insurance?</p>
+            <p class="insurance-info">Cost: <span id="insuranceCost">$0</span> (Half your bet)<br>
+            Pays 2:1 if dealer has Blackjack</p>
+            <div class="insurance-actions">
+                <button id="btnInsuranceYes" class="action-btn primary">YES</button>
+                <button id="btnInsuranceNo" class="action-btn">NO</button>
+            </div>
         </div>
     </div>
 
@@ -435,8 +595,28 @@
                     btnResetRules: document.getElementById('btnResetRules'),
                     cfgDecks: document.getElementById('cfgDecks'),
                     cfgTarget: document.getElementById('cfgTarget'),
-                    cfgDealerStand: document.getElementById('cfgDealerStand')
+                    cfgDealerStand: document.getElementById('cfgDealerStand'),
+                    debugOverlay: document.getElementById('debugOverlay'),
+                    debugClose: document.getElementById('debugClose'),
+                    debugPlayerBJ: document.getElementById('debugPlayerBJ'),
+                    debugPlayerBust: document.getElementById('debugPlayerBust'),
+                    debugDealerBust: document.getElementById('debugDealerBust'),
+                    debugTie: document.getElementById('debugTie'),
+                    debugResetBank: document.getElementById('debugResetBank'),
+                    header: document.querySelector('.header'),
+                    insuranceModal: document.getElementById('insuranceModal'),
+                    insuranceCost: document.getElementById('insuranceCost'),
+                    btnInsuranceYes: document.getElementById('btnInsuranceYes'),
+                    btnInsuranceNo: document.getElementById('btnInsuranceNo')
                 };
+
+                // Insurance tracking
+                this.insuranceBet = 0;
+                this.insuranceOffered = false;
+
+                // Triple-tap counter for debug console
+                this.tapCount = 0;
+                this.tapTimer = null;
 
                 this._bindEvents();
                 this._subscribeToEngine();
@@ -466,6 +646,30 @@
                 this.el.btnStand.onclick = () => this.engine.submitAction('player1', 'stand');
                 this.el.btnDouble.onclick = () => this.engine.submitAction('player1', 'double');
                 this.el.btnNew.onclick = () => this.newHand();
+
+                // Debug Console: Triple-tap on header to reveal
+                this.el.header.onclick = () => {
+                    this.tapCount++;
+                    clearTimeout(this.tapTimer);
+                    if (this.tapCount === 3) {
+                        this.el.debugOverlay.classList.remove('hidden');
+                        this.tapCount = 0;
+                    } else {
+                        this.tapTimer = setTimeout(() => { this.tapCount = 0; }, 500);
+                    }
+                };
+
+                // Debug Command Handlers
+                this.el.debugClose.onclick = () => this.el.debugOverlay.classList.add('hidden');
+                this.el.debugPlayerBJ.onclick = () => this._debugForcePlayerBlackjack();
+                this.el.debugPlayerBust.onclick = () => this._debugForcePlayerBust();
+                this.el.debugDealerBust.onclick = () => this._debugForceDealerBust();
+                this.el.debugTie.onclick = () => this._debugForceTie();
+                this.el.debugResetBank.onclick = () => this._debugResetBank();
+
+                // Insurance Handlers
+                this.el.btnInsuranceYes.onclick = () => this._acceptInsurance();
+                this.el.btnInsuranceNo.onclick = () => this._declineInsurance();
             }
 
             _subscribeToEngine() {
@@ -560,6 +764,8 @@
 
             _resetTableVisuals() {
                 this.holeCardHidden = true;
+                this.insuranceBet = 0;
+                this.insuranceOffered = false;
                 this.el.dealerCards.innerHTML = '<div class="card-slot placeholder"></div><div class="card-slot placeholder"></div>';
                 this.el.playerCards.innerHTML = '<div class="card-slot placeholder"></div><div class="card-slot placeholder"></div>';
                 this.el.dealerValue.textContent = '-';
@@ -637,6 +843,13 @@
 
             _handleTurnStart(event) {
                 if (event.actorId === 'player1') {
+                    // Check for insurance offer BEFORE showing controls
+                    const gameState = this.engine.getGameState();
+                    if (!this.insuranceOffered && BlackjackRuleset.shouldOfferInsurance(gameState)) {
+                        this._offerInsurance();
+                        return; // Wait for insurance decision before showing controls
+                    }
+
                     this._showControls('action');
                     this._showMessage('Your turn');
                     this._disableActionButtons(false);
@@ -659,10 +872,28 @@
                 const result = event.playerResults[0];
                 let msg = '', cls = '';
                 const target = BlackjackRuleset.targetScore;
-                if (result.outcome === 'blackjack') { msg = 'BLACKJACK!'; cls = 'blackjack'; }
-                else if (result.outcome === 'win') { msg = 'You Win!'; cls = 'win'; }
-                else if (result.outcome === 'push') { msg = 'Push'; cls = 'push'; }
-                else { msg = result.playerValue > target ? 'Bust!' : 'Dealer Wins'; cls = 'lose'; }
+
+                // Check for insurance payout
+                if (this.insuranceBet > 0) {
+                    const dealer = this.engine.dealer;
+                    const dealerValue = BlackjackRuleset.evaluateHand(dealer.hand.contents);
+
+                    if (dealerValue.isBlackjack) {
+                        // Insurance pays 2:1
+                        const insurancePayout = BlackjackRuleset.calculateInsurancePayout(this.insuranceBet);
+                        const player = this.engine.players[0];
+                        player.balance += insurancePayout;
+                        console.log(`[Insurance] Dealer has Blackjack! Insurance paid $${insurancePayout}`);
+                        msg = 'Insurance Paid! ';
+                    } else {
+                        console.log(`[Insurance] Dealer does not have Blackjack. Insurance lost.`);
+                    }
+                }
+
+                if (result.outcome === 'blackjack') { msg += 'BLACKJACK!'; cls = 'blackjack'; }
+                else if (result.outcome === 'win') { msg += 'You Win!'; cls = 'win'; }
+                else if (result.outcome === 'push') { msg += 'Push'; cls = 'push'; }
+                else { msg += result.playerValue > target ? 'Bust!' : 'Dealer Wins'; cls = 'lose'; }
                 this._showMessage(msg, cls);
             }
 
@@ -688,10 +919,18 @@
             _updateValues() {
                 const target = BlackjackRuleset.targetScore;
                 const player = this.engine.players[0];
+
+                // Player value bubble logic
                 if (player && player.hand.count > 0) {
                     const pv = BlackjackRuleset.evaluateHand(player.hand.contents);
                     this.el.playerValue.textContent = pv.best;
                     let cls = 'hand-value';
+
+                    // BUBBLE LOGIC: Hide if value is 0
+                    if (pv.best === 0) {
+                        cls += ' hidden-value';
+                    }
+
                     if (pv.best > target) {
                         cls += ' bust';
                         this._disableActionButtons(true); // Disable if bust
@@ -703,18 +942,38 @@
                         this.el.btnDouble.disabled = true;
                     }
                     this.el.playerValue.className = cls;
+                } else {
+                    // BUBBLE LOGIC: Hide if no cards
+                    this.el.playerValue.className = 'hand-value hidden-value';
+                    this.el.playerValue.textContent = '-';
                 }
-                
+
                 const dealer = this.engine.dealer;
+                // Dealer value bubble logic
                 if (dealer && dealer.hand.count > 0) {
                     if (this.holeCardHidden && dealer.hand.count >= 1) {
                         const v = BlackjackRuleset._getCardValue(dealer.hand.contents[0]);
                         this.el.dealerValue.textContent = v === 11 ? 'A' : v;
+                        this.el.dealerValue.className = 'hand-value';
                     } else {
                         const dv = BlackjackRuleset.evaluateHand(dealer.hand.contents);
                         this.el.dealerValue.textContent = dv.best;
-                        this.el.dealerValue.className = 'hand-value' + (dv.best > target ? ' bust' : '');
+                        let cls = 'hand-value';
+
+                        // BUBBLE LOGIC: Hide if value is 0
+                        if (dv.best === 0) {
+                            cls += ' hidden-value';
+                        }
+
+                        if (dv.best > target) {
+                            cls += ' bust';
+                        }
+                        this.el.dealerValue.className = cls;
                     }
+                } else {
+                    // BUBBLE LOGIC: Hide if no cards
+                    this.el.dealerValue.className = 'hand-value hidden-value';
+                    this.el.dealerValue.textContent = '-';
                 }
             }
 
@@ -740,6 +999,204 @@
                 this.el.message.textContent = text;
                 this.el.message.className = 'message visible ' + className;
                 // Auto-fade logic could go here, but stickiness is better for game over
+            }
+
+            // ================================================================
+            // INSURANCE LOGIC
+            // ================================================================
+
+            _offerInsurance() {
+                const player = this.engine.players[0];
+                const halfBet = Math.floor(this.wager / 2);
+
+                // Check if player has enough balance
+                if (halfBet > player.balance) {
+                    this.insuranceOffered = true;
+                    // Not enough funds, skip insurance
+                    this._showControls('action');
+                    this._showMessage('Your turn');
+                    this._disableActionButtons(false);
+                    return;
+                }
+
+                this.el.insuranceCost.textContent = `$${halfBet}`;
+                this.el.insuranceModal.classList.remove('hidden');
+            }
+
+            _acceptInsurance() {
+                const player = this.engine.players[0];
+                const halfBet = Math.floor(this.wager / 2);
+
+                // Deduct insurance bet
+                player.balance -= halfBet;
+                this.insuranceBet = halfBet;
+                this.insuranceOffered = true;
+
+                this._updateBalance();
+                this.el.insuranceModal.classList.add('hidden');
+
+                console.log(`[Insurance] Player bought insurance for $${halfBet}`);
+
+                // Show normal controls
+                this._showControls('action');
+                this._showMessage('Your turn (Insurance Active)');
+                this._disableActionButtons(false);
+                const canDouble = this.engine.getGameState().activeActorId === 'player1';
+                this.el.btnDouble.disabled = !canDouble;
+            }
+
+            _declineInsurance() {
+                this.insuranceBet = 0;
+                this.insuranceOffered = true;
+
+                this.el.insuranceModal.classList.add('hidden');
+
+                console.log('[Insurance] Player declined insurance');
+
+                // Show normal controls
+                this._showControls('action');
+                this._showMessage('Your turn');
+                this._disableActionButtons(false);
+                const canDouble = this.engine.getGameState().activeActorId === 'player1';
+                this.el.btnDouble.disabled = !canDouble;
+            }
+
+            // ================================================================
+            // DEBUG COMMANDS
+            // ================================================================
+
+            _debugForcePlayerBlackjack() {
+                const player = this.engine.players[0];
+                if (!player) return alert('No active player');
+
+                // Clear hand and give Ace + King
+                player.hand.contents = [];
+                player.hand.receive(new Card(Suit.SPADES, Rank.ACE, 'standard'), -1);
+                player.hand.receive(new Card(Suit.HEARTS, Rank.KING, 'standard'), -1);
+
+                this.el.playerCards.innerHTML = '';
+                player.hand.contents.forEach(card => {
+                    const slot = this._createCardElement(card, true);
+                    this.el.playerCards.appendChild(slot);
+                });
+
+                this._updateValues();
+                this.el.debugOverlay.classList.add('hidden');
+                console.log('[DEBUG] Forced player blackjack');
+            }
+
+            _debugForcePlayerBust() {
+                const player = this.engine.players[0];
+                if (!player || player.hand.count === 0) return alert('Deal cards first');
+
+                // Add a 10 to force bust (if current hand is close)
+                const currentValue = BlackjackRuleset.evaluateHand(player.hand.contents).best;
+                if (currentValue >= 12) {
+                    // Add a 10 to bust
+                    player.hand.receive(new Card(Suit.DIAMONDS, Rank.TEN, 'standard'), -1);
+
+                    const slot = this._createCardElement(player.hand.contents[player.hand.count - 1], true);
+                    this.el.playerCards.appendChild(slot);
+
+                    this._updateValues();
+                    this.el.debugOverlay.classList.add('hidden');
+                    console.log('[DEBUG] Forced player bust');
+                } else {
+                    alert('Player needs at least 12 to bust with a 10');
+                }
+            }
+
+            _debugForceDealerBust() {
+                const dealer = this.engine.dealer;
+                if (!dealer || dealer.hand.count === 0) return alert('Dealer needs cards first');
+
+                // Keep adding cards until dealer busts
+                const shoe = this.engine.piles.shoe;
+                const target = BlackjackRuleset.targetScore;
+
+                while (true) {
+                    const val = BlackjackRuleset.evaluateHand(dealer.hand.contents);
+                    if (val.best > target) break; // Already bust
+
+                    const card = shoe.give(0);
+                    if (!card) {
+                        alert('Shoe is empty');
+                        break;
+                    }
+
+                    dealer.hand.receive(card, -1);
+
+                    const newVal = BlackjackRuleset.evaluateHand(dealer.hand.contents);
+                    if (newVal.best > target) {
+                        // Busted!
+                        this.holeCardHidden = false;
+                        this._redrawDealer();
+                        this.el.debugOverlay.classList.add('hidden');
+                        console.log('[DEBUG] Forced dealer bust');
+                        break;
+                    }
+
+                    // Safety: prevent infinite loop
+                    if (dealer.hand.count > 10) {
+                        alert('Safety limit reached');
+                        break;
+                    }
+                }
+            }
+
+            _debugForceTie() {
+                const player = this.engine.players[0];
+                const dealer = this.engine.dealer;
+                if (!player || !dealer || player.hand.count === 0) return alert('Deal cards first');
+
+                const playerValue = BlackjackRuleset.evaluateHand(player.hand.contents).best;
+
+                // Clear dealer hand and build to match player
+                dealer.hand.contents = [];
+
+                // Simple approach: give dealer same value with different cards
+                if (playerValue <= 11) {
+                    // Use face card + small card
+                    const needed = playerValue;
+                    if (needed >= 2 && needed <= 11) {
+                        dealer.hand.receive(new Card(Suit.CLUBS, Rank.KING, 'standard'), -1);
+                        // Add second card to reach target
+                        const ranks = [null, null, Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE,
+                                      Rank.SIX, Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.ACE];
+                        const secondCard = ranks[needed];
+                        if (secondCard) {
+                            dealer.hand.receive(new Card(Suit.DIAMONDS, secondCard, 'standard'), -1);
+                        }
+                    }
+                } else {
+                    // Give two cards that sum to playerValue
+                    const firstVal = Math.min(10, Math.floor(playerValue / 2));
+                    const secondVal = playerValue - firstVal;
+
+                    const rankMap = {2: Rank.TWO, 3: Rank.THREE, 4: Rank.FOUR, 5: Rank.FIVE,
+                                    6: Rank.SIX, 7: Rank.SEVEN, 8: Rank.EIGHT, 9: Rank.NINE, 10: Rank.TEN};
+
+                    dealer.hand.receive(new Card(Suit.CLUBS, rankMap[firstVal] || Rank.TEN, 'standard'), -1);
+                    dealer.hand.receive(new Card(Suit.DIAMONDS, rankMap[secondVal] || Rank.TEN, 'standard'), -1);
+                }
+
+                this.holeCardHidden = false;
+                this._redrawDealer();
+                this.el.debugOverlay.classList.add('hidden');
+                console.log(`[DEBUG] Forced tie at ${playerValue}`);
+            }
+
+            _debugResetBank() {
+                if (confirm('Reset bank to $1000?')) {
+                    const player = this.engine.players[0];
+                    if (player) {
+                        player.balance = 1000;
+                        localStorage.setItem('family_arcade_balance', 1000);
+                        this._updateBalance();
+                        this.el.debugOverlay.classList.add('hidden');
+                        console.log('[DEBUG] Bank reset to $1000');
+                    }
+                }
             }
         }
 
