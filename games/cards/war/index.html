@@ -233,7 +233,7 @@
     
     <div class="controls">
         <div class="control-row" id="playRow">
-            <button class="btn btn-flip" id="btnFlip">Flip!</button>
+            <button class="btn btn-flip" id="btnFlip">Draw!</button>
         </div>
         <div class="control-row hidden" id="gameOverRow">
             <button class="btn btn-new" id="btnNew">Play Again</button>
@@ -311,7 +311,8 @@
 
                 this._clearBattle();
                 this._updateCounts();
-                this._showMessage('Flip a card!', '');
+                this._showMessage('Draw a card!', '');
+                this._updateButtonText();
                 this.el.playRow.classList.remove('hidden');
                 this.el.gameOverRow.classList.add('hidden');
                 this.el.warPot.classList.add('hidden');
@@ -328,7 +329,7 @@
                 var player2 = state.players[1];
 
                 if (player1.hand.count === 0 || player2.hand.count === 0) {
-                    this.engine.transitionTo('RESOLUTION');
+                    // Don't transition directly - let the engine handle it through action
                     return;
                 }
 
@@ -348,6 +349,7 @@
                 this._showMessage(event.text, this._getMessageClass(event.text));
                 this._updateCounts();
                 this._updateWarPot();
+                this._updateButtonText();
             };
 
             WarUI.prototype._handleResolution = function(event) {
@@ -452,6 +454,11 @@
                 if (text.indexOf('Opponent wins') !== -1) return 'lose';
                 if (text.indexOf('WAR') !== -1) return 'war';
                 return '';
+            };
+
+            WarUI.prototype._updateButtonText = function() {
+                var isWar = WarRuleset._warMode;
+                this.el.btnFlip.textContent = isWar ? 'War!' : 'Draw!';
             };
 
             new WarUI();
