@@ -147,7 +147,7 @@ var WarRuleset = {
             this._giveWarPotToPlayer(player1);
             actions.push({
                 type: 'MESSAGE',
-                text: player1.name + ' wins the round!'
+                text: player1.name + ' win the round!'
             });
             this._warMode = false;
             return {

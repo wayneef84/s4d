@@ -111,6 +111,36 @@
             border-radius: 8px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.5);
         }
+
+        .battle-card canvas.slide-in-from-top {
+            animation: slideFromTop 0.3s ease-out;
+        }
+
+        .battle-card canvas.slide-in-from-bottom {
+            animation: slideFromBottom 0.3s ease-out;
+        }
+
+        @keyframes slideFromTop {
+            from {
+                transform: translateY(-200px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideFromBottom {
+            from {
+                transform: translateY(200px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
         
         .battle-card .label {
             font-size: 0.8em;
@@ -340,9 +370,9 @@
                 this.currentPlayer1Card = player1.hand.contents[0];
                 this.currentPlayer2Card = player2.hand.contents[0];
 
-                // Render cards immediately
-                this._renderCard(this.currentPlayer1Card, this.el.yourCard);
-                this._renderCard(this.currentPlayer2Card, this.el.oppCard);
+                // Render cards with animation
+                this._renderCard(this.currentPlayer1Card, this.el.yourCard, true);
+                this._renderCard(this.currentPlayer2Card, this.el.oppCard, true);
 
                 // Submit action to engine
                 this.engine.submitAction('player1', 'flip');
@@ -381,7 +411,7 @@
                 this.el.gameOverRow.classList.remove('hidden');
             };
 
-            WarUI.prototype._renderCard = function(card, container) {
+            WarUI.prototype._renderCard = function(card, container, animate) {
                 var rankKey = RankToAsset[card.rank];
                 var suitKey = SuitToAsset[card.suit];
                 var canvas = CardAssets.getAsset(rankKey, suitKey);
@@ -390,6 +420,15 @@
                 clone.width = canvas.width;
                 clone.height = canvas.height;
                 clone.getContext('2d').drawImage(canvas, 0, 0);
+
+                // Add animation class if requested
+                if (animate) {
+                    if (container === this.el.oppCard) {
+                        clone.classList.add('slide-in-from-top');
+                    } else if (container === this.el.yourCard) {
+                        clone.classList.add('slide-in-from-bottom');
+                    }
+                }
 
                 container.innerHTML = '';
                 container.appendChild(clone);
