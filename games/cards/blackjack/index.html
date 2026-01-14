@@ -526,8 +526,9 @@
             <button id="btnDouble" class="action-btn">DOUBLE</button>
         </div>
 
-        <div id="gameOverRow" class="control-row hidden">
-            <button id="btnNew" class="action-btn primary" style="width: 100%; max-width: 400px;">NEW HAND</button>
+        <div id="gameOverRow" class="control-row hidden" style="flex-direction: column; gap: 10px;">
+            <button id="btnPlayAgain" class="action-btn primary" style="width: 100%; max-width: 400px;">PLAY AGAIN (<span id="lastBetAmount">$25</span>)</button>
+            <button id="btnNew" class="action-btn" style="width: 100%; max-width: 400px;">CHANGE BET</button>
         </div>
     </footer>
 
@@ -605,6 +606,8 @@
                     btnStand: document.getElementById('btnStand'),
                     btnDouble: document.getElementById('btnDouble'),
                     btnNew: document.getElementById('btnNew'),
+                    btnPlayAgain: document.getElementById('btnPlayAgain'),
+                    lastBetAmount: document.getElementById('lastBetAmount'),
                     btnClearBet: document.getElementById('btnClearBet'),
                     settingsModal: document.getElementById('settingsModal'),
                     btnSettings: document.getElementById('btnSettings'),
@@ -663,6 +666,7 @@
                 this.el.btnHit.onclick = () => this.engine.submitAction('player1', 'hit');
                 this.el.btnStand.onclick = () => this.engine.submitAction('player1', 'stand');
                 this.el.btnDouble.onclick = () => this.engine.submitAction('player1', 'double');
+                this.el.btnPlayAgain.onclick = () => this.playAgain();
                 this.el.btnNew.onclick = () => this.newHand();
 
                 // Debug Console: Triple-tap on header to reveal
@@ -791,6 +795,16 @@
                 this.el.playerValue.className = 'hand-value';
                 this.el.dealerValue.className = 'hand-value';
                 this._showMessage('');
+            }
+
+            playAgain() {
+                // Deal with same bet as last hand (wager is already set)
+                this.engine.players[0]._hasStood = false;
+                if (this.engine.dealer) {
+                    this.engine.dealer._hasStood = false;
+                }
+                this._resetTableVisuals();
+                this.deal();
             }
 
             newHand() {
@@ -932,6 +946,9 @@
 
                 // Update final values
                 this._updateValues();
+
+                // Update "Play Again" button with last bet amount
+                this.el.lastBetAmount.textContent = '$' + this.wager;
 
                 // FORCE controls visible even if logic tried to hide them
                 this._showControls('gameover');
