@@ -439,6 +439,130 @@
             margin-top: 10px;
         }
 
+        /* History Modal */
+        .history-modal {
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .history-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #334155;
+        }
+        .history-tab {
+            flex: 1;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #94a3b8;
+            padding: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .history-tab.active {
+            color: #fbbf24;
+            border-bottom-color: #fbbf24;
+        }
+        .history-panel {
+            min-height: 250px;
+        }
+        .card-count-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .count-row {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.3);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+        }
+        .count-row span:first-child {
+            color: #94a3b8;
+        }
+        .count-row span:last-child {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+        .shoe-info {
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            text-align: center;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+        .shoe-info span {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+        .hand-history-table {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            border: 1px solid #334155;
+            overflow: hidden;
+        }
+        .history-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.5fr 1fr;
+            gap: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            font-weight: bold;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid #475569;
+        }
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .history-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.5fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #334155;
+            font-size: 0.9rem;
+        }
+        .history-row:last-child {
+            border-bottom: none;
+        }
+        .history-row .hand-num {
+            color: #94a3b8;
+        }
+        .history-row .bet {
+            color: #e2e8f0;
+        }
+        .history-row .result {
+            font-weight: bold;
+        }
+        .history-row .result.win { color: #4ade80; }
+        .history-row .result.lose { color: #f87171; }
+        .history-row .result.push { color: #fbbf24; }
+        .history-row .result.blackjack { color: #ffd700; }
+        .history-row .payout {
+            color: #4ade80;
+            font-weight: bold;
+        }
+        .history-row .payout.negative {
+            color: #f87171;
+        }
+        .no-history {
+            padding: 40px;
+            text-align: center;
+            color: #64748b;
+            font-style: italic;
+        }
+
         /* Insurance Modal */
         .insurance-modal {
             text-align: center;
@@ -482,6 +606,7 @@
 <body>
     <header class="header">
         <h1>
+            <button id="btnHistory" class="settings-btn">📊</button>
             <button id="btnSettings" class="settings-btn">⚙️</button>
             Blackjack
         </h1>
@@ -536,6 +661,55 @@
             <button id="btnNew" class="action-btn">CHANGE BET</button>
         </div>
     </footer>
+
+    <div id="historyModal" class="modal-overlay hidden">
+        <div class="modal history-modal">
+            <h2>📊 Game History</h2>
+
+            <div class="history-tabs">
+                <button id="tabCardCount" class="history-tab active">Card Count</button>
+                <button id="tabHandHistory" class="history-tab">Hand History</button>
+            </div>
+
+            <div id="cardCountPanel" class="history-panel">
+                <div class="card-count-grid">
+                    <div class="count-row"><span>Ace:</span><span id="countA">0</span></div>
+                    <div class="count-row"><span>2:</span><span id="count2">0</span></div>
+                    <div class="count-row"><span>3:</span><span id="count3">0</span></div>
+                    <div class="count-row"><span>4:</span><span id="count4">0</span></div>
+                    <div class="count-row"><span>5:</span><span id="count5">0</span></div>
+                    <div class="count-row"><span>6:</span><span id="count6">0</span></div>
+                    <div class="count-row"><span>7:</span><span id="count7">0</span></div>
+                    <div class="count-row"><span>8:</span><span id="count8">0</span></div>
+                    <div class="count-row"><span>9:</span><span id="count9">0</span></div>
+                    <div class="count-row"><span>10:</span><span id="count10">0</span></div>
+                    <div class="count-row"><span>J:</span><span id="countJ">0</span></div>
+                    <div class="count-row"><span>Q:</span><span id="countQ">0</span></div>
+                    <div class="count-row"><span>K:</span><span id="countK">0</span></div>
+                </div>
+                <div class="shoe-info">
+                    <strong>Total Cards Dealt:</strong> <span id="totalDealt">0</span><br>
+                    <strong>Cards Remaining:</strong> <span id="cardsRemaining">312</span>
+                </div>
+            </div>
+
+            <div id="handHistoryPanel" class="history-panel hidden">
+                <div class="hand-history-table">
+                    <div class="history-header">
+                        <span>Hand</span>
+                        <span>Bet</span>
+                        <span>Result</span>
+                        <span>Payout</span>
+                    </div>
+                    <div id="handHistoryList" class="history-list">
+                        <div class="no-history">No hands played yet</div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btnCloseHistory" class="full-btn close-btn">Close</button>
+        </div>
+    </div>
 
     <div id="settingsModal" class="modal-overlay hidden">
         <div class="modal">
@@ -595,6 +769,12 @@
                 this.wager = 25;
                 this.holeCardHidden = true;
 
+                // History tracking
+                this.cardCounts = this._initCardCounts();
+                this.handHistory = [];
+                this.handNumber = 0;
+                this.totalCardsDealt = 0;
+
                 this.el = {
                     balance: document.getElementById('balance'),
                     dealerCards: document.getElementById('dealerCards'),
@@ -633,7 +813,17 @@
                     insuranceModal: document.getElementById('insuranceModal'),
                     insuranceCost: document.getElementById('insuranceCost'),
                     btnInsuranceYes: document.getElementById('btnInsuranceYes'),
-                    btnInsuranceNo: document.getElementById('btnInsuranceNo')
+                    btnInsuranceNo: document.getElementById('btnInsuranceNo'),
+                    historyModal: document.getElementById('historyModal'),
+                    btnHistory: document.getElementById('btnHistory'),
+                    btnCloseHistory: document.getElementById('btnCloseHistory'),
+                    tabCardCount: document.getElementById('tabCardCount'),
+                    tabHandHistory: document.getElementById('tabHandHistory'),
+                    cardCountPanel: document.getElementById('cardCountPanel'),
+                    handHistoryPanel: document.getElementById('handHistoryPanel'),
+                    handHistoryList: document.getElementById('handHistoryList'),
+                    totalDealt: document.getElementById('totalDealt'),
+                    cardsRemaining: document.getElementById('cardsRemaining')
                 };
 
                 // Insurance tracking
@@ -651,6 +841,16 @@
             }
 
             _bindEvents() {
+                // History Modal
+                this.el.btnHistory.onclick = () => {
+                    this._updateHistoryDisplay();
+                    this.el.historyModal.classList.remove('hidden');
+                };
+                this.el.btnCloseHistory.onclick = () => this.el.historyModal.classList.add('hidden');
+                this.el.tabCardCount.onclick = () => this._showHistoryTab('cardCount');
+                this.el.tabHandHistory.onclick = () => this._showHistoryTab('handHistory');
+
+                // Settings Modal
                 this.el.btnSettings.onclick = () => this.el.settingsModal.classList.remove('hidden');
                 this.el.btnCloseSettings.onclick = () => this._saveSettings();
                 this.el.btnResetFunds.onclick = () => this._resetFunds();
@@ -702,7 +902,10 @@
             _subscribeToEngine() {
                 this.engine.on('*', (event) => {
                     switch (event.type) {
-                        case 'DEAL': this._handleDealEvent(event); break;
+                        case 'DEAL':
+                            this._handleDealEvent(event);
+                            this._trackCard(event.card);
+                            break;
                         case 'TURN_START': this._handleTurnStart(event); break;
                         case 'REVEAL': this._handleReveal(); break;
                         case 'RESOLUTION': this._handleResolution(event); break;
@@ -913,6 +1116,13 @@
             }
 
             _handleReveal() {
+                // Count hole card now that it's revealed
+                const dealer = this.engine.dealer;
+                if (dealer && dealer.hand.count >= 2) {
+                    const holeCard = dealer.hand.contents[1];
+                    this._trackCard(holeCard.toJSON ? holeCard.toJSON() : holeCard);
+                }
+
                 this.holeCardHidden = false;
                 this._redrawDealer();
             }
@@ -923,6 +1133,15 @@
                 const target = BlackjackRuleset.targetScore;
 
                 // CRITICAL: Reveal dealer's hole card at resolution
+                // Track hole card if it wasn't already counted
+                if (this.holeCardHidden) {
+                    const dealer = this.engine.dealer;
+                    if (dealer && dealer.hand.count >= 2) {
+                        const holeCard = dealer.hand.contents[1];
+                        this._trackCard(holeCard.toJSON ? holeCard.toJSON() : holeCard);
+                    }
+                }
+
                 this.holeCardHidden = false;
                 this._redrawDealer();
                 this._updateValues();
@@ -946,6 +1165,9 @@
                 else if (result.outcome === 'push') { msg += 'Push'; cls = 'push'; }
                 else { msg += result.playerValue > target ? 'Bust!' : 'Dealer Wins'; cls = 'lose'; }
                 this._showMessage(msg, cls);
+
+                // Log hand to history
+                this._logHandResult(result);
             }
 
             _handleGameOver() {
@@ -1296,6 +1518,114 @@
                         console.log('[DEBUG] Bank reset to $1000');
                     }
                 }
+            }
+
+            // ================================================================
+            // HISTORY TRACKING
+            // ================================================================
+
+            _initCardCounts() {
+                const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+                const counts = {};
+                ranks.forEach(rank => counts[rank] = 0);
+                return counts;
+            }
+
+            _trackCard(cardData) {
+                // Exclude dealer's hole card from count until revealed
+                // Hole card is 2nd dealer card (index 1)
+                const dealer = this.engine.dealer;
+                if (dealer && this.holeCardHidden) {
+                    const dealerCards = dealer.hand.contents;
+                    if (dealerCards.length === 2 && dealerCards[1].uuid === cardData.uuid) {
+                        console.log('[History] Skipping hole card from count:', cardData.rank);
+                        return; // Don't count hole card yet
+                    }
+                }
+
+                const rank = cardData.rank;
+                if (this.cardCounts[rank] !== undefined) {
+                    this.cardCounts[rank]++;
+                    this.totalCardsDealt++;
+                    console.log(`[History] Card tracked: ${rank} (Total: ${this.totalCardsDealt})`);
+                }
+            }
+
+            _showHistoryTab(tab) {
+                if (tab === 'cardCount') {
+                    this.el.tabCardCount.classList.add('active');
+                    this.el.tabHandHistory.classList.remove('active');
+                    this.el.cardCountPanel.classList.remove('hidden');
+                    this.el.handHistoryPanel.classList.add('hidden');
+                } else {
+                    this.el.tabHandHistory.classList.add('active');
+                    this.el.tabCardCount.classList.remove('active');
+                    this.el.handHistoryPanel.classList.remove('hidden');
+                    this.el.cardCountPanel.classList.add('hidden');
+                }
+            }
+
+            _updateHistoryDisplay() {
+                // Update card count display
+                Object.keys(this.cardCounts).forEach(rank => {
+                    const el = document.getElementById(`count${rank}`);
+                    if (el) el.textContent = this.cardCounts[rank];
+                });
+
+                this.el.totalDealt.textContent = this.totalCardsDealt;
+
+                // Calculate cards remaining (6 decks = 312 cards)
+                const totalCards = BlackjackRuleset.deckCount * 52;
+                const remaining = totalCards - this.totalCardsDealt;
+                this.el.cardsRemaining.textContent = remaining;
+
+                // Update hand history list
+                if (this.handHistory.length === 0) {
+                    this.el.handHistoryList.innerHTML = '<div class="no-history">No hands played yet</div>';
+                } else {
+                    const rows = this.handHistory.map(hand => `
+                        <div class="history-row">
+                            <span class="hand-num">#${hand.number}</span>
+                            <span class="bet">$${hand.bet}</span>
+                            <span class="result ${hand.outcome}">${this._formatOutcome(hand.outcome)}</span>
+                            <span class="payout ${hand.payout < 0 ? 'negative' : ''}">$${hand.payout}</span>
+                        </div>
+                    `).reverse().join(''); // Reverse to show most recent first
+                    this.el.handHistoryList.innerHTML = rows;
+                }
+            }
+
+            _formatOutcome(outcome) {
+                switch(outcome) {
+                    case 'blackjack': return 'Blackjack!';
+                    case 'win': return 'Win';
+                    case 'lose': return 'Lose';
+                    case 'push': return 'Push';
+                    default: return outcome;
+                }
+            }
+
+            _logHandResult(result) {
+                this.handNumber++;
+                const player = this.engine.players[0];
+
+                // Calculate net payout (payout - bet)
+                const netPayout = (result.multiplier * result.bet) - result.bet;
+
+                this.handHistory.push({
+                    number: this.handNumber,
+                    bet: result.bet,
+                    outcome: result.outcome,
+                    payout: Math.floor(netPayout),
+                    playerValue: result.playerValue,
+                    dealerValue: result.dealerValue
+                });
+
+                console.log(`[History] Hand #${this.handNumber} logged:`, {
+                    bet: result.bet,
+                    outcome: result.outcome,
+                    netPayout: Math.floor(netPayout)
+                });
             }
         }
 
