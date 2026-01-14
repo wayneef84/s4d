@@ -4,8 +4,16 @@ All notable changes to the Fong Family Arcade project will be documented in this
 
 ## [Unreleased]
 ### Planned Features
-- **History Mode:** Card tracking log with hand history and wager summary (accessible via header button like Settings)
 - **God Mode:** Card counting overlay showing probability of next card value (educational feature)
+
+## [Blackjack v1.2.0] - 2026-01-13
+### Added
+- **History Mode:** 📊 button in header opens tracking modal with two tabs
+  - **Card Count Tab:** Tracks all dealt cards by rank (A, 2-K), excludes dealer hole card until revealed
+  - **Hand History Tab:** Logs each hand with bet, result, and net payout
+  - Shows total cards dealt and cards remaining in shoe (6 decks = 312 cards)
+  - Color-coded outcomes: Win (green), Lose (red), Push (yellow), Blackjack (gold)
+  - Most recent hands displayed first
 
 ## [Blackjack v1.1.1] - 2026-01-13
 ### Fixed
