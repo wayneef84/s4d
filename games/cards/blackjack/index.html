@@ -795,9 +795,11 @@
 
             _flyCard(cardData, container, faceUp) {
                 const landingPad = this._createCardElement(cardData, faceUp);
+                // CRITICAL: Use visibility:hidden to prevent flash before animation
+                landingPad.style.visibility = 'hidden';
                 landingPad.style.opacity = '0';
                 container.appendChild(landingPad);
-                
+
                 const endRect = landingPad.getBoundingClientRect();
                 const startX = window.innerWidth - 50;
                 const startY = -100;
@@ -820,6 +822,7 @@
 
                 setTimeout(() => {
                     flyer.remove();
+                    landingPad.style.visibility = 'visible';
                     landingPad.style.opacity = '1';
                     this._updateValues();
                 }, 500);
