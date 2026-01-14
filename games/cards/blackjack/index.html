@@ -82,16 +82,17 @@
             position: relative;
         }
         
-        /* Message Overlay */
+        /* Message Overlay - Positioned at top to avoid covering player cards */
         .message-container {
             position: absolute;
-            top: 40%; /* Moved up slightly */
+            top: 20%; /* Moved to upper third */
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, 0);
             z-index: 100;
             text-align: center;
             pointer-events: none;
             width: 100%;
+            max-width: 400px;
         }
         
         .message {
