@@ -309,6 +309,9 @@
                     { id: 'player2', type: 'ai', name: 'Opponent' }
                 ]);
 
+                // War has no BETTING phase, go straight to DEALING
+                this.engine.startRound();
+
                 this._clearBattle();
                 this._updateCounts();
                 this._showMessage('Draw a card!', '');
