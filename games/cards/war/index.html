@@ -455,6 +455,183 @@
             text-align: center;
             cursor: pointer;
         }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid rgba(255,215,0,0.2);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #ccc;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9em;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: #ffd700;
+            background: rgba(255,215,0,0.1);
+            color: #ffd700;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Current Match Tab */
+        .current-match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .current-match-header h3 {
+            margin: 0;
+            color: #ffd700;
+            font-size: 1.1em;
+        }
+
+        .small-btn {
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        .rounds-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .round-entry {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 6px 0;
+            font-size: 0.85em;
+            border-left: 3px solid #4ade80;
+        }
+
+        .round-entry.lose {
+            border-left-color: #ef4444;
+        }
+
+        .round-entry.war {
+            border-left-color: #f59e0b;
+            background: rgba(245,158,11,0.1);
+        }
+
+        .round-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        .round-cards {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 1.1em;
+        }
+
+        .card-text {
+            font-weight: bold;
+            padding: 2px 4px;
+        }
+
+        .card-red {
+            color: #ef4444;
+        }
+
+        .card-black {
+            color: #fff;
+        }
+
+        .vs {
+            color: #888;
+            font-size: 0.8em;
+        }
+
+        .round-winner {
+            text-align: center;
+            font-weight: bold;
+            color: #4ade80;
+            margin-top: 4px;
+        }
+
+        .round-winner.lose {
+            color: #ef4444;
+        }
+
+        .war-sequence {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 4px;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .war-sequence strong {
+            color: #f59e0b;
+        }
+
+        .no-history {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        .match-entry {
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .match-entry:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .match-entry.expanded {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expand-icon {
+            font-size: 0.8em;
+            color: #ffd700;
+        }
+
+        .match-rounds {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
     </style>
 </head>
 <body>
@@ -523,27 +700,46 @@
         <div class="modal">
             <h2>Game History</h2>
 
-            <div class="history-stats">
-                <h3>Statistics</h3>
-                <div class="stat-row">
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalWins">0</div>
-                        <div class="stat-label">Wins</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalLosses">0</div>
-                        <div class="stat-label">Losses</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="winRate">0%</div>
-                        <div class="stat-label">Win Rate</div>
-                    </div>
-                </div>
+            <!-- Tab Navigation -->
+            <div class="tab-nav">
+                <button id="tabCurrentMatch" class="tab-btn active">Current Match</button>
+                <button id="tabPreviousMatches" class="tab-btn">Previous Matches</button>
             </div>
 
-            <div id="historyList"></div>
+            <!-- Tab Content: Current Match -->
+            <div id="currentMatchTab" class="tab-content active">
+                <div class="current-match-header">
+                    <h3>Current Match (<span id="currentMatchRoundsCount">0</span> rounds)</h3>
+                    <button id="btnClearCurrentMatch" class="secondary-btn small-btn">Clear</button>
+                </div>
+                <div id="currentMatchRoundsList" class="rounds-list"></div>
+            </div>
 
-            <button id="btnClearHistory" class="full-btn secondary-btn">Clear History</button>
+            <!-- Tab Content: Previous Matches -->
+            <div id="previousMatchesTab" class="tab-content hidden">
+                <div class="history-stats">
+                    <h3>Statistics</h3>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalWins">0</div>
+                            <div class="stat-label">Wins</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalLosses">0</div>
+                            <div class="stat-label">Losses</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="winRate">0%</div>
+                            <div class="stat-label">Win Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="historyList"></div>
+
+                <button id="btnClearHistory" class="full-btn secondary-btn">Clear All History</button>
+            </div>
+
             <button id="btnCloseHistory" class="full-btn close-btn">Close</button>
         </div>
     </div>
@@ -594,6 +790,7 @@
     <script src="../shared/player.js"></script>
     <script src="../shared/engine.js"></script>
     <script src="../shared/card-assets.js"></script>
+    <script src="../shared/card-utils.js"></script>
     <script src="ruleset.js"></script>
     
     <script>
@@ -613,6 +810,12 @@
                 this.player2Points = 0;
                 this.isEndlessMode = true; // Default to endless/auto-shuffle
                 this._previousDeckCount = undefined; // Track deck count for reshuffle detection
+
+                // Battle history tracking (NEW)
+                this.matchHistory = [];              // Array of match objects
+                this.currentMatchId = null;          // ID of active match
+                this.roundHistoryThreshold = 250;    // Max rounds to store
+                this.nextMatchId = 1;                // Auto-increment counter
 
                 this.el = {
                     oppWins: document.getElementById('oppWins'),
@@ -652,13 +855,21 @@
                     totalLosses: document.getElementById('totalLosses'),
                     winRate: document.getElementById('winRate'),
                     autoShuffleFlash: document.getElementById('autoShuffleFlash'),
-                    flashMessage: document.getElementById('flashMessage')
+                    flashMessage: document.getElementById('flashMessage'),
+                    tabCurrentMatch: document.getElementById('tabCurrentMatch'),
+                    tabPreviousMatches: document.getElementById('tabPreviousMatches'),
+                    currentMatchTab: document.getElementById('currentMatchTab'),
+                    previousMatchesTab: document.getElementById('previousMatchesTab'),
+                    currentMatchRoundsCount: document.getElementById('currentMatchRoundsCount'),
+                    currentMatchRoundsList: document.getElementById('currentMatchRoundsList'),
+                    btnClearCurrentMatch: document.getElementById('btnClearCurrentMatch')
                 };
 
                 this._bindEvents();
                 this._subscribeToEngine();
                 this._loadSettings();
                 this._loadHistory();
+                this._loadMatchHistory();  // Load battle history
                 this._initGame();
             };
 
@@ -723,6 +934,21 @@
                         self.el.settingsModal.classList.add('hidden');
                     }
                 };
+
+                // Tab switching
+                this.el.tabCurrentMatch.onclick = function() {
+                    self._switchTab('current');
+                };
+                this.el.tabPreviousMatches.onclick = function() {
+                    self._switchTab('previous');
+                };
+
+                // Clear current match
+                this.el.btnClearCurrentMatch.onclick = function() {
+                    if (confirm('Clear current match? This will reset the match and start fresh.')) {
+                        self._clearCurrentMatch();
+                    }
+                };
             };
 
             WarUI.prototype._subscribeToEngine = function() {
@@ -772,6 +998,12 @@
                 this.player2Points = 0;
                 this._updateWins();
                 this._updatePoints();
+
+                // Start new match if needed
+                var currentMatch = this._getCurrentMatch();
+                if (!currentMatch || !currentMatch.isCurrentMatch) {
+                    this._startNewMatch();
+                }
             };
 
             WarUI.prototype._flip = function() {
@@ -818,6 +1050,22 @@
                 }
                 this._updatePoints();
 
+                // Add round entry to battle history
+                if (this.currentPlayer1Card && this.currentPlayer2Card) {
+                    this._addRoundEntry({
+                        yourCard: {
+                            suit: this.currentPlayer1Card.suit,
+                            rank: this.currentPlayer1Card.rank
+                        },
+                        oppCard: {
+                            suit: this.currentPlayer2Card.suit,
+                            rank: this.currentPlayer2Card.rank
+                        },
+                        winner: event.winner === 'player1' ? 'you' : 'opponent',
+                        isWar: false
+                    });
+                }
+
                 // Check for deck depletion in non-endless mode
                 if (!this.isEndlessMode) {
                     var state = this.engine.getGameState();
@@ -858,6 +1106,8 @@
                 // Add history entry BEFORE resetting points
                 if (winner) {
                     this._addHistoryEntry(winner === 'player1' ? 'win' : 'lose');
+                    // End current match
+                    this._endCurrentMatch(winner === 'player1' ? 'you' : 'opponent');
                     // FIX: Update the history modal now that we added a new entry
                     this._updateHistoryDisplay();
                 }
@@ -1290,7 +1540,406 @@
                 this.el.historyList.innerHTML = this.gameHistory.length > 0 ? html : '<p style="text-align: center; color: #888;">No games played yet</p>';
             };
 
-            new WarUI();
+            // Override _updateHistoryDisplay to call new rendering methods
+            var oldUpdateHistoryDisplay = WarUI.prototype._updateHistoryDisplay;
+            WarUI.prototype._updateHistoryDisplay = function() {
+                // Update both tabs
+                this._renderCurrentMatchTab();
+                this._renderPreviousMatchesTab();
+            };
+
+            // ========================================================================
+            // BATTLE HISTORY RENDERING METHODS
+            // ========================================================================
+
+            WarUI.prototype._renderCurrentMatchTab = function() {
+                var currentMatch = this._getCurrentMatch();
+                if (!currentMatch || !currentMatch.rounds || currentMatch.rounds.length === 0) {
+                    this.el.currentMatchRoundsList.innerHTML = '<p class="no-history">No rounds played yet.</p>';
+                    this.el.currentMatchRoundsCount.textContent = '0';
+                    return;
+                }
+
+                this.el.currentMatchRoundsCount.textContent = currentMatch.rounds.length;
+
+                var html = '';
+
+                // Show rounds in reverse order (newest first)
+                for (var i = currentMatch.rounds.length - 1; i >= 0; i--) {
+                    var round = currentMatch.rounds[i];
+                    html += this._renderRoundEntry(round);
+                }
+
+                this.el.currentMatchRoundsList.innerHTML = html;
+            };
+
+            WarUI.prototype._renderRoundEntry = function(round) {
+                var winClass = round.winner === 'you' ? '' : ' lose';
+                var warClass = round.isWar ? ' war' : '';
+
+                var html = '<div class="round-entry' + winClass + warClass + '">';
+
+                // Round header
+                html += '<div class="round-header">';
+                html += '<span class="round-id">#' + round.roundId + '</span>';
+                html += '<span class="round-time">' + this._formatTime(round.timestamp) + '</span>';
+                html += '</div>';
+
+                // Cards
+                html += '<div class="round-cards">';
+                html += '<span>You: ' + CardUtils.renderCardHTML(round.yourCard) + '</span>';
+                html += '<span class="vs">vs</span>';
+                html += '<span>Opp: ' + CardUtils.renderCardHTML(round.oppCard) + '</span>';
+                html += '</div>';
+
+                // War sequence (if applicable)
+                if (round.isWar && round.warSequence) {
+                    html += '<div class="war-sequence">';
+                    html += '<strong>⚔️ WAR!</strong><br>';
+                    html += 'You: ' + CardUtils.renderCardListHTML(round.warSequence.yourHidden);
+                    html += ' → ' + CardUtils.renderCardHTML(round.warSequence.yourFlipped) + '<br>';
+                    html += 'Opp: ' + CardUtils.renderCardListHTML(round.warSequence.oppHidden);
+                    html += ' → ' + CardUtils.renderCardHTML(round.warSequence.oppFlipped);
+                    html += '</div>';
+                }
+
+                // Winner
+                html += '<div class="round-winner' + winClass + '">';
+                html += '→ ' + (round.winner === 'you' ? 'You Win' : 'Opponent Wins');
+                html += '</div>';
+
+                html += '</div>';
+                return html;
+            };
+
+            WarUI.prototype._renderPreviousMatchesTab = function() {
+                // Calculate stats from matchHistory
+                var wins = 0;
+                var losses = 0;
+
+                for (var i = 0; i < this.matchHistory.length; i++) {
+                    var match = this.matchHistory[i];
+                    if (match.winner === 'you') wins++;
+                    else if (match.winner === 'opponent') losses++;
+                }
+
+                // Also count from old gameHistory for backwards compatibility
+                for (var j = 0; j < this.gameHistory.length; j++) {
+                    var entry = this.gameHistory[j];
+                    var result = entry.winner || entry.result;
+                    if (result === 'win') wins++;
+                    else if (result === 'lose') losses++;
+                }
+
+                var total = wins + losses;
+                var winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+
+                this.el.totalWins.textContent = wins;
+                this.el.totalLosses.textContent = losses;
+                this.el.winRate.textContent = winRate + '%';
+
+                // Render match list (excluding current match)
+                var html = '';
+
+                for (var k = this.matchHistory.length - 1; k >= 0; k--) {
+                    var matchEntry = this.matchHistory[k];
+
+                    // Skip current match
+                    if (matchEntry.isCurrentMatch) {
+                        continue;
+                    }
+
+                    html += this._renderMatchEntry(matchEntry);
+                }
+
+                // Also render old gameHistory for backwards compatibility
+                if (this.gameHistory.length > 0) {
+                    html += '<h4 style="margin: 16px 0 8px; color: #888; font-size: 0.9em;">Legacy Matches:</h4>';
+                    var legacyHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">';
+                    legacyHTML += '<thead><tr style="border-bottom: 1px solid #444;">';
+                    legacyHTML += '<th style="padding: 8px; text-align: left;">Date</th>';
+                    legacyHTML += '<th style="padding: 8px; text-align: center;">Winner</th>';
+                    legacyHTML += '<th style="padding: 8px; text-align: right;">Your Points</th>';
+                    legacyHTML += '<th style="padding: 8px; text-align: right;">Opp Points</th>';
+                    legacyHTML += '</tr></thead><tbody>';
+
+                    for (var m = 0; m < Math.min(this.gameHistory.length, 50); m++) {
+                        var gameEntry = this.gameHistory[m];
+                        var gameResult = gameEntry.winner || gameEntry.result;
+
+                        legacyHTML += '<tr style="border-bottom: 1px solid #333;">';
+                        legacyHTML += '<td style="padding: 8px;">' + gameEntry.date + '</td>';
+                        legacyHTML += '<td style="padding: 8px; text-align: center; color: ' + (gameResult === 'win' ? '#4ade80' : (gameResult === 'lose' ? '#ef4444' : '#888')) + '">';
+                        legacyHTML += (gameResult === 'win' ? 'You' : (gameResult === 'lose' ? 'Opponent' : 'Tie'));
+                        legacyHTML += '</td>';
+                        legacyHTML += '<td style="padding: 8px; text-align: right;">' + gameEntry.player1Points + '</td>';
+                        legacyHTML += '<td style="padding: 8px; text-align: right;">' + gameEntry.player2Points + '</td>';
+                        legacyHTML += '</tr>';
+                    }
+
+                    legacyHTML += '</tbody></table>';
+                    html += legacyHTML;
+                }
+
+                if (html === '') {
+                    html = '<p class="no-history">No previous matches yet.</p>';
+                }
+
+                this.el.historyList.innerHTML = html;
+            };
+
+            WarUI.prototype._renderMatchEntry = function(match) {
+                var matchDate = new Date(match.timestamp).toLocaleString();
+                var winnerText = match.winner === 'you' ? 'You Won' : 'Opponent Won';
+                var winnerColor = match.winner === 'you' ? '#4ade80' : '#ef4444';
+
+                var html = '<div class="match-entry" id="match-' + match.matchId + '" onclick="warUI._toggleMatchExpand(' + match.matchId + ')">';
+
+                // Match header (always visible)
+                html += '<div class="match-header">';
+                html += '<div>';
+                html += '<strong>Match #' + match.matchId + '</strong> - ' + matchDate + '<br>';
+                html += '<span style="color: ' + winnerColor + '">' + winnerText + '</span>';
+                html += ' | ' + match.totalRounds + ' rounds';
+                html += ' | You ' + match.yourFinalScore + ' - Opp ' + match.oppFinalScore;
+                html += '</div>';
+                html += '<span class="expand-icon">▶</span>';
+                html += '</div>';
+
+                // Match rounds (collapsible)
+                html += '<div class="match-rounds" id="match-rounds-' + match.matchId + '" style="display: none;">';
+                if (match.hasRoundHistory && match.rounds && match.rounds.length > 0) {
+                    for (var r = 0; r < match.rounds.length; r++) {
+                        html += this._renderRoundEntry(match.rounds[r]);
+                    }
+                } else {
+                    html += '<p class="no-history">Round history unavailable (pruned to save space)</p>';
+                }
+                html += '</div>';
+
+                html += '</div>';
+                return html;
+            };
+
+            WarUI.prototype._toggleMatchExpand = function(matchId) {
+                var matchDiv = document.getElementById('match-' + matchId);
+                var roundsDiv = document.getElementById('match-rounds-' + matchId);
+                var expandIcon = matchDiv ? matchDiv.querySelector('.expand-icon') : null;
+
+                if (roundsDiv && expandIcon) {
+                    if (roundsDiv.style.display === 'none') {
+                        roundsDiv.style.display = 'block';
+                        expandIcon.textContent = '▼';
+                        matchDiv.classList.add('expanded');
+                    } else {
+                        roundsDiv.style.display = 'none';
+                        expandIcon.textContent = '▶';
+                        matchDiv.classList.remove('expanded');
+                    }
+                }
+            };
+
+            WarUI.prototype._formatTime = function(timestamp) {
+                var date = new Date(timestamp);
+                return date.toLocaleTimeString();
+            };
+
+            // ========================================================================
+            // MATCH HISTORY METHODS (Battle-by-Battle Tracking)
+            // ========================================================================
+
+            WarUI.prototype._saveMatchHistory = function() {
+                try {
+                    var json = JSON.stringify(this.matchHistory);
+                    localStorage.setItem('war_match_history', json);
+                } catch(e) {
+                    console.error('[MATCH HISTORY] Failed to save:', e);
+                }
+            };
+
+            WarUI.prototype._loadMatchHistory = function() {
+                try {
+                    var json = localStorage.getItem('war_match_history');
+                    if (json) {
+                        this.matchHistory = JSON.parse(json);
+
+                        // Find highest match ID for auto-increment
+                        for (var i = 0; i < this.matchHistory.length; i++) {
+                            if (this.matchHistory[i].matchId >= this.nextMatchId) {
+                                this.nextMatchId = this.matchHistory[i].matchId + 1;
+                            }
+
+                            // Set current match ID
+                            if (this.matchHistory[i].isCurrentMatch) {
+                                this.currentMatchId = this.matchHistory[i].matchId;
+                            }
+                        }
+                    }
+                } catch(e) {
+                    console.error('[MATCH HISTORY] Failed to load:', e);
+                    this.matchHistory = [];
+                }
+            };
+
+            WarUI.prototype._startNewMatch = function() {
+                var match = {
+                    matchId: this.nextMatchId++,
+                    timestamp: Date.now(),
+                    winner: null,
+                    yourFinalScore: this.player1Points,
+                    oppFinalScore: this.player2Points,
+                    totalRounds: 0,
+                    hasRoundHistory: true,
+                    isCurrentMatch: true,
+                    rounds: []
+                };
+
+                // Mark previous match as not current
+                if (this.matchHistory.length > 0) {
+                    var lastMatch = this.matchHistory[this.matchHistory.length - 1];
+                    lastMatch.isCurrentMatch = false;
+                }
+
+                this.matchHistory.push(match);
+                this.currentMatchId = match.matchId;
+                this._saveMatchHistory();
+                console.log('[MATCH HISTORY] Started new match:', match.matchId);
+            };
+
+            WarUI.prototype._getCurrentMatch = function() {
+                for (var i = 0; i < this.matchHistory.length; i++) {
+                    if (this.matchHistory[i].matchId === this.currentMatchId) {
+                        return this.matchHistory[i];
+                    }
+                }
+                return null;
+            };
+
+            WarUI.prototype._endCurrentMatch = function(winner) {
+                var match = this._getCurrentMatch();
+                if (match) {
+                    match.winner = winner;
+                    match.yourFinalScore = this.player1Points;
+                    match.oppFinalScore = this.player2Points;
+                    match.isCurrentMatch = false;
+                    this._saveMatchHistory();
+                    console.log('[MATCH HISTORY] Ended match:', match.matchId, 'Winner:', winner);
+                }
+            };
+
+            WarUI.prototype._addRoundEntry = function(roundData) {
+                var currentMatch = this._getCurrentMatch();
+                if (!currentMatch) {
+                    // No current match - start one
+                    this._startNewMatch();
+                    currentMatch = this._getCurrentMatch();
+                }
+
+                // Add round to current match
+                roundData.roundId = currentMatch.rounds.length + 1;
+                roundData.timestamp = Date.now();
+                currentMatch.rounds.push(roundData);
+                currentMatch.totalRounds++;
+
+                // Check if we need to prune old match histories
+                this._pruneRoundHistoryIfNeeded();
+
+                // Save to localStorage
+                this._saveMatchHistory();
+            };
+
+            WarUI.prototype._getTotalRoundCount = function() {
+                var total = 0;
+                for (var i = 0; i < this.matchHistory.length; i++) {
+                    if (this.matchHistory[i].hasRoundHistory && this.matchHistory[i].rounds) {
+                        total += this.matchHistory[i].rounds.length;
+                    }
+                }
+                return total;
+            };
+
+            WarUI.prototype._pruneRoundHistoryIfNeeded = function() {
+                var totalRounds = this._getTotalRoundCount();
+
+                // If under threshold, nothing to do
+                if (totalRounds <= this.roundHistoryThreshold) {
+                    return;
+                }
+
+                console.log('[PRUNE] Total rounds:', totalRounds, '> threshold:', this.roundHistoryThreshold);
+
+                // Delete oldest match round histories (but NOT current match)
+                for (var i = 0; i < this.matchHistory.length; i++) {
+                    var match = this.matchHistory[i];
+
+                    // Skip current match - always keep it
+                    if (match.isCurrentMatch) {
+                        continue;
+                    }
+
+                    // Delete this match's round history
+                    if (match.hasRoundHistory) {
+                        console.log('[PRUNE] Deleting match', match.matchId, 'rounds:', match.rounds.length);
+                        delete match.rounds;
+                        match.hasRoundHistory = false;
+
+                        // Recalculate total
+                        totalRounds = this._getTotalRoundCount();
+
+                        // If now under threshold, stop
+                        if (totalRounds <= this.roundHistoryThreshold) {
+                            console.log('[PRUNE] Now under threshold:', totalRounds);
+                            break;
+                        }
+                    }
+                }
+            };
+
+            WarUI.prototype._switchTab = function(tab) {
+                if (tab === 'current') {
+                    this.el.tabCurrentMatch.classList.add('active');
+                    this.el.tabPreviousMatches.classList.remove('active');
+                    this.el.currentMatchTab.classList.add('active');
+                    this.el.currentMatchTab.classList.remove('hidden');
+                    this.el.previousMatchesTab.classList.remove('active');
+                    this.el.previousMatchesTab.classList.add('hidden');
+                } else {
+                    this.el.tabCurrentMatch.classList.remove('active');
+                    this.el.tabPreviousMatches.classList.add('active');
+                    this.el.currentMatchTab.classList.remove('active');
+                    this.el.currentMatchTab.classList.add('hidden');
+                    this.el.previousMatchesTab.classList.add('active');
+                    this.el.previousMatchesTab.classList.remove('hidden');
+                }
+                // Refresh display
+                this._updateHistoryDisplay();
+            };
+
+            WarUI.prototype._clearCurrentMatch = function() {
+                var currentMatch = this._getCurrentMatch();
+                if (currentMatch) {
+                    // Remove from history
+                    for (var i = 0; i < this.matchHistory.length; i++) {
+                        if (this.matchHistory[i].matchId === this.currentMatchId) {
+                            this.matchHistory.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+
+                // Reset points
+                this.player1Points = 0;
+                this.player2Points = 0;
+                this._updatePoints();
+
+                // Start fresh match
+                this._startNewMatch();
+                this._saveMatchHistory();
+                this._updateHistoryDisplay();
+            };
+
+            // Make warUI globally accessible for onclick handlers
+            var warUI = new WarUI();
         })();
     </script>
 </body>
