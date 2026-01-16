@@ -262,15 +262,6 @@
             color: white;
         }
 
-        .btn-reset-game {
-            background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
-            color: white;
-            font-size: 0.75em;
-            padding: 8px 20px;
-            margin: 8px 12px;
-            align-self: center;
-        }
-
         .btn-new {
             background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
             color: white;
@@ -418,8 +409,9 @@
 <body>
     <div class="header">
         <h1>
-            <button id="btnHistory" class="settings-btn">📊</button>
-            <button id="btnSettings" class="settings-btn">⚙️</button>
+            <button id="btnResetGame" class="settings-btn" title="Reset Game">🔄</button>
+            <button id="btnHistory" class="settings-btn" title="History">📊</button>
+            <button id="btnSettings" class="settings-btn" title="Settings">⚙️</button>
             ⚔️ War
         </h1>
     </div>
@@ -455,8 +447,6 @@
             <div class="message" id="message">Flip a card!</div>
             <div class="war-pot hidden" id="warPot">War pot: <span>0</span> cards</div>
         </div>
-
-        <button class="btn btn-reset-game" id="btnResetGame">🔄 Reset Game</button>
 
         <div class="player-zone">
             <div class="player-info">
@@ -879,12 +869,20 @@
                     }
                 } else {
                     // Non-endless mode: Offer full reset or just deck
-                    var choice = confirm('Reset deck only (OK) or reset entire game including wins (Cancel)?');
+                    var choice = confirm('Reset deck only (OK) or reset entire game including wins and history (Cancel)?');
                     if (choice) {
                         // Just reset deck
                         this._resetDeckAndContinue();
                     } else {
-                        // Full reset
+                        // Full reset - clear wins, points, and history
+                        this.player1Wins = 0;
+                        this.player2Wins = 0;
+                        this.player1Points = 0;
+                        this.player2Points = 0;
+                        this.gameHistory = [];
+                        this._saveHistory();
+                        this._updateWins();
+                        this._updatePoints();
                         this._initGame();
                     }
                 }
@@ -1061,10 +1059,12 @@
 
             WarUI.prototype._addHistoryEntry = function(result) {
                 var entry = {
+                    matchId: 'match_' + Date.now(),
                     date: new Date().toLocaleString(),
-                    result: result,
-                    playerCards: this.engine.getGameState().players[0].hand.count,
-                    opponentCards: this.engine.getGameState().players[1].hand.count
+                    winner: result, // 'win' or 'lose' or 'tie'
+                    player1Points: this.player1Points,
+                    player2Points: this.player2Points,
+                    endReason: 'deck_depletion'
                 };
                 this.gameHistory.unshift(entry);
                 if (this.gameHistory.length > 50) {
@@ -1078,8 +1078,11 @@
                 var losses = 0;
 
                 for (var i = 0; i < this.gameHistory.length; i++) {
-                    if (this.gameHistory[i].result === 'win') wins++;
-                    else if (this.gameHistory[i].result === 'lose') losses++;
+                    var entry = this.gameHistory[i];
+                    // Handle both old format (result) and new format (winner)
+                    var result = entry.winner || entry.result;
+                    if (result === 'win') wins++;
+                    else if (result === 'lose') losses++;
                 }
 
                 var total = wins + losses;
@@ -1089,18 +1092,33 @@
                 this.el.totalLosses.textContent = losses;
                 this.el.winRate.textContent = winRate + '%';
 
-                var html = '';
-                for (var j = 0; j < Math.min(this.gameHistory.length, 20); j++) {
+                var html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">';
+                html += '<thead><tr style="border-bottom: 1px solid #444;">';
+                html += '<th style="padding: 8px; text-align: left;">Date</th>';
+                html += '<th style="padding: 8px; text-align: center;">Winner</th>';
+                html += '<th style="padding: 8px; text-align: right;">Your Points</th>';
+                html += '<th style="padding: 8px; text-align: right;">Opp Points</th>';
+                html += '</tr></thead><tbody>';
+
+                for (var j = 0; j < Math.min(this.gameHistory.length, 50); j++) {
                     var entry = this.gameHistory[j];
-                    var resultClass = entry.result === 'win' ? 'win' : 'lose';
-                    var resultText = entry.result === 'win' ? '✓ Win' : '✗ Loss';
-                    html += '<div class="history-entry ' + resultClass + '">';
-                    html += '<div>' + resultText + '</div>';
-                    html += '<div>' + entry.date + '</div>';
-                    html += '</div>';
+                    var result = entry.winner || entry.result;
+                    var resultClass = result === 'win' ? 'win' : (result === 'lose' ? 'lose' : '');
+                    var resultText = result === 'win' ? '✓ You' : (result === 'lose' ? '✗ Opp' : '〜 Tie');
+                    var yourPoints = entry.player1Points !== undefined ? entry.player1Points : '-';
+                    var oppPoints = entry.player2Points !== undefined ? entry.player2Points : '-';
+
+                    html += '<tr style="border-bottom: 1px solid #333;" class="' + resultClass + '">';
+                    html += '<td style="padding: 6px;">' + entry.date + '</td>';
+                    html += '<td style="padding: 6px; text-align: center;">' + resultText + '</td>';
+                    html += '<td style="padding: 6px; text-align: right;">' + yourPoints + '</td>';
+                    html += '<td style="padding: 6px; text-align: right;">' + oppPoints + '</td>';
+                    html += '</tr>';
                 }
 
-                this.el.historyList.innerHTML = html || '<p style="text-align: center; color: #888;">No games played yet</p>';
+                html += '</tbody></table>';
+
+                this.el.historyList.innerHTML = this.gameHistory.length > 0 ? html : '<p style="text-align: center; color: #888;">No games played yet</p>';
             };
 
             new WarUI();
