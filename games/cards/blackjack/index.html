@@ -323,7 +323,27 @@
         }
         
         button.action-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #94a3b8; }
-        
+
+        button.utility-btn {
+            background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+            border: 1px solid #4338ca;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #4338ca;
+            transition: all 0.1s;
+            width: 100%;
+            max-width: 400px;
+            margin: 8px 0;
+            text-transform: none;
+            touch-action: manipulation;
+        }
+
+        button.utility-btn:active { transform: translateY(3px); box-shadow: 0 0 0 #4338ca; }
+
         button.primary {
             background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
             border-color: #b45309;
@@ -684,7 +704,8 @@
                 <div class="chip chip-100" data-val="100">100</div>
                 <div class="chip chip-clear" id="btnClearBet">✕</div>
             </div>
-            
+
+            <button id="btnResetDeckBetting" class="utility-btn">🔄 Reset Deck</button>
             <button id="btnDeal" class="action-btn primary" style="width: 100%; max-width: 400px;">DEAL HAND</button>
         </div>
 
@@ -826,6 +847,7 @@
                     actionRow: document.getElementById('actionRow'),
                     gameOverRow: document.getElementById('gameOverRow'),
                     btnDeal: document.getElementById('btnDeal'),
+                    btnResetDeckBetting: document.getElementById('btnResetDeckBetting'),
                     btnHit: document.getElementById('btnHit'),
                     btnStand: document.getElementById('btnStand'),
                     btnDouble: document.getElementById('btnDouble'),
@@ -936,6 +958,7 @@
                 };
 
                 this.el.btnDeal.onclick = () => this.deal();
+                this.el.btnResetDeckBetting.onclick = () => this._resetDeck();
                 this.el.btnHit.onclick = () => this.engine.submitAction('player1', 'hit');
                 this.el.btnStand.onclick = () => this.engine.submitAction('player1', 'stand');
                 this.el.btnDouble.onclick = () => this.engine.submitAction('player1', 'double');

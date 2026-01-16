@@ -261,7 +261,14 @@
             background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
             color: white;
         }
-        
+
+        .btn-reset-deck {
+            background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            font-size: 0.9em;
+            padding: 12px 36px;
+        }
+
         .btn-new {
             background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
             color: white;
@@ -459,8 +466,9 @@
     </div>
     
     <div class="controls">
-        <div class="control-row" id="playRow">
+        <div class="control-row" id="playRow" style="flex-direction: column; gap: 10px;">
             <button class="btn btn-flip" id="btnFlip">Draw!</button>
+            <button class="btn btn-reset-deck" id="btnResetDeck">🔄 Reset Deck</button>
         </div>
         <div class="control-row hidden" id="gameOverRow">
             <button class="btn btn-new" id="btnNew">Play Again</button>
@@ -569,6 +577,7 @@
                     playRow: document.getElementById('playRow'),
                     gameOverRow: document.getElementById('gameOverRow'),
                     btnFlip: document.getElementById('btnFlip'),
+                    btnResetDeck: document.getElementById('btnResetDeck'),
                     btnNew: document.getElementById('btnNew'),
                     btnHistory: document.getElementById('btnHistory'),
                     btnSettings: document.getElementById('btnSettings'),
@@ -599,6 +608,7 @@
             WarUI.prototype._bindEvents = function() {
                 var self = this;
                 this.el.btnFlip.onclick = function() { self._flip(); };
+                this.el.btnResetDeck.onclick = function() { self._resetDeck(); };
                 this.el.btnNew.onclick = function() { self._initGame(); };
 
                 // Toggle endless mode on win display click
@@ -734,6 +744,12 @@
                     return;
                 }
 
+                // Increment rounds on every flip (not just wins)
+                this.totalRounds++;
+                this.player1Rounds++;
+                this.player2Rounds++;
+                this._updateRounds();
+
                 // Store and render cards BEFORE they move to war pot
                 var card1 = player1.hand.contents[0];
                 var card2 = player2.hand.contents[0];
@@ -759,20 +775,19 @@
                     return;
                 }
 
-                this.totalRounds++;
-
-                if (event.winner === 'player1') {
-                    this.player1Wins++;
-                    this.player1Rounds++;
-                } else if (event.winner === 'player2') {
-                    this.player2Wins++;
-                    this.player2Rounds++;
+                // Wins only increment in non-endless mode
+                // (In endless mode, wins stay at infinity)
+                if (!this.isEndlessMode) {
+                    if (event.winner === 'player1') {
+                        this.player1Wins++;
+                    } else if (event.winner === 'player2') {
+                        this.player2Wins++;
+                    }
+                    this._updateWins();
                 }
 
-                this._updateWins();
-                this._updateRounds();
-
-                console.log('[DEBUG] After update - P1 wins:', this.player1Wins, 'P1 rounds:', this.player1Rounds, 'Total:', this.totalRounds);
+                // Rounds are already incremented in _flip(), not here
+                console.log('[DEBUG] After round win - P1 wins:', this.player1Wins, 'P1 rounds:', this.player1Rounds, 'Endless:', this.isEndlessMode);
             };
 
             WarUI.prototype._handleResolution = function(event) {
@@ -784,25 +799,74 @@
 
             WarUI.prototype._handleGameOver = function() {
                 var state = this.engine.getGameState();
-                var resolution = state.resolution;
-
-                if (!resolution) return;
-
                 var player1 = state.players[0];
                 var player2 = state.players[1];
 
-                var result;
-                if (player1.hand.count > player2.hand.count) {
-                    this._showMessage('🎉 You Win the War!', 'win');
-                    result = 'win';
-                } else {
-                    this._showMessage('Opponent Wins', 'lose');
-                    result = 'lose';
+                // In endless mode, this should never happen
+                if (this.isEndlessMode) {
+                    console.warn('[GAME_OVER] Called in endless mode - should not happen');
+                    return;
                 }
 
-                this._addHistoryEntry(result);
-                this.el.playRow.classList.add('hidden');
-                this.el.gameOverRow.classList.remove('hidden');
+                // Non-endless mode: Award win point, reset rounds, reset deck
+                var winner;
+                if (player1.hand.count > player2.hand.count) {
+                    this._showMessage('🎉 You Win the Game! (+1 win)', 'win');
+                    this.player1Wins++;
+                    winner = 'player1';
+                } else {
+                    this._showMessage('Opponent Wins the Game! (+1 win)', 'lose');
+                    this.player2Wins++;
+                    winner = 'player2';
+                }
+
+                this._updateWins();
+                this._addHistoryEntry(winner === 'player1' ? 'win' : 'lose');
+
+                // Reset rounds for new game
+                this.player1Rounds = 0;
+                this.player2Rounds = 0;
+                this.totalRounds = 0;
+                this._updateRounds();
+
+                // Auto-reset deck and continue game after short delay
+                var self = this;
+                setTimeout(function() {
+                    self._resetDeckAndContinue();
+                }, 2000);
+            };
+
+            WarUI.prototype._resetDeckAndContinue = function() {
+                // Reinitialize the game with a fresh deck
+                WarRuleset.initializeGame(this.engine.getGameState());
+
+                // Clear the battle display
+                this._clearBattle();
+
+                // Update displays
+                this._updateSharedDeck();
+                this._showMessage('New deck! Draw to continue.', '');
+
+                console.log('[RESET] Deck reset - fresh 52 cards dealt');
+            };
+
+            WarUI.prototype._resetDeck = function() {
+                if (this.isEndlessMode) {
+                    // Endless mode: Keep stats, just reset deck
+                    if (confirm('Reset deck? Stats will be preserved.')) {
+                        this._resetDeckAndContinue();
+                    }
+                } else {
+                    // Non-endless mode: Offer full reset or just deck
+                    var choice = confirm('Reset deck only (OK) or reset entire game including wins (Cancel)?');
+                    if (choice) {
+                        // Just reset deck
+                        this._resetDeckAndContinue();
+                    } else {
+                        // Full reset
+                        this._initGame();
+                    }
+                }
             };
 
             WarUI.prototype._renderCard = function(card, container, animate) {

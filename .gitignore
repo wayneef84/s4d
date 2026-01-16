@@ -1,0 +1,13 @@
+# Claude Assessment Files (internal notes, not for repo)
+CLAUDE_ASSESSMENT.md
+CONTINUATION_NOTES.md
+
+# Daily TODO files
+*_TODO.md
+
+# OS Files
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
