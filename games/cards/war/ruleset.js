@@ -1,15 +1,13 @@
 /**
  * war/ruleset.js
  * War card game ruleset for the Card Engine.
- * 
- * Rules:
+ * * Rules:
  * - Each player flips a card simultaneously
  * - Higher card wins both cards
  * - If tie, WAR: each player puts 3 cards face down, then flips one
  * - Winner takes all cards
  * - Game ends when one player has all cards
- * 
- * Safari-compatible
+ * * Safari-compatible
  */
 
 var WarRuleset = {
@@ -38,7 +36,7 @@ var WarRuleset = {
     // Configuration options
     deckCount: 1,
     twosHigh: false,
-    neverending: true,
+    neverending: true, // Renamed "Auto-Shuffle" in UI
 
     // ========================================================================
     // DECK BUILDING
@@ -234,17 +232,19 @@ var WarRuleset = {
     },
     
     _giveWarPotToPlayer: function(player, gameState) {
-        // In neverending mode, cards go to graveyard instead of player's hand
-        if (this.neverending) {
-            while (this._warPot.count > 0) {
-                var card = this._warPot.give(0);
-                this._graveyard.receive(card, -1);
-            }
+        // Step 1: ALWAYS move won cards to graveyard (out of hands)
+        // This ensures the "Shared Deck" count decreases in both modes
+        while (this._warPot.count > 0) {
+            var card = this._warPot.give(0);
+            this._graveyard.receive(card, -1);
+        }
 
-            // Check if either player is out of cards and needs reshuffle
+        // Step 2: Only reshuffle if Auto-Shuffle (neverending) is ON
+        if (this.neverending) {
             var player1 = gameState.players[0];
             var player2 = gameState.players[1];
 
+            // If a player is out of cards, shuffle the graveyard and fill them back up
             if (player1.hand.count === 0 && this._graveyard.count > 0) {
                 this._graveyard.shuffle();
                 while (this._graveyard.count > 0) {
@@ -258,14 +258,8 @@ var WarRuleset = {
                     player2.hand.receive(c2, -1);
                 }
             }
-        } else {
-            // Normal mode: shuffle and give to winner
-            this._warPot.shuffle();
-            while (this._warPot.count > 0) {
-                var card = this._warPot.give(0);
-                player.hand.receive(card, -1);
-            }
         }
+        // If !neverending, we do nothing. The hands remain empty, triggering Game Over.
     },
     
     _checkGameEnd: function(gameState) {

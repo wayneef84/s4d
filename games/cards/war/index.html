@@ -308,6 +308,25 @@
             margin: 16px 0;
         }
 
+        .setting-row.multi-line {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .setting-header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            align-items: center;
+        }
+
+        .setting-hint {
+            font-size: 0.8em;
+            color: #aaa;
+            line-height: 1.3;
+        }
+
         .setting-row label {
             font-weight: 600;
             color: #ccc;
@@ -404,6 +423,38 @@
             font-size: 0.8em;
             color: #aaa;
         }
+
+        /* Auto-Shuffle Flash Modal */
+        .auto-shuffle-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .auto-shuffle-flash.show {
+            opacity: 1;
+        }
+
+        .flash-content {
+            background: #1e293b;
+            border: 2px solid #4338ca;
+            border-radius: 12px;
+            padding: 30px 50px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #fff;
+            text-align: center;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -422,7 +473,7 @@
                 <span class="player-name">Opponent</span>
                 <div class="score-display">
                     <span class="score-item" id="oppWinDisplay" title="Total wins"><span id="oppWins">0</span> wins</span>
-                    <span class="score-item" id="oppPointsDisplay" title="Points this game">Points: <span id="oppPoints">0</span></span>
+                    <span class="score-item" id="oppPointsDisplay" title="Points this game">Opp: <span id="oppPoints">0</span></span>
                 </div>
             </div>
         </div>
@@ -453,7 +504,7 @@
                 <span class="player-name">You</span>
                 <div class="score-display">
                     <span class="score-item" id="yourWinDisplay" title="Total wins"><span id="yourWins">0</span> wins</span>
-                    <span class="score-item" id="yourPointsDisplay" title="Points this game">Points: <span id="yourPoints">0</span></span>
+                    <span class="score-item" id="yourPointsDisplay" title="Points this game">You: <span id="yourPoints">0</span></span>
                 </div>
             </div>
         </div>
@@ -468,7 +519,6 @@
         </div>
     </div>
 
-    <!-- History Modal -->
     <div id="historyModal" class="modal-overlay hidden">
         <div class="modal">
             <h2>Game History</h2>
@@ -498,7 +548,6 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
     <div id="settingsModal" class="modal-overlay hidden">
         <div class="modal">
             <h2>Game Settings</h2>
@@ -513,15 +562,28 @@
                 <input type="checkbox" id="cfgTwosHigh">
             </div>
 
-            <div class="setting-row">
-                <label>Never-ending</label>
-                <input type="checkbox" id="cfgNeverending">
+            <div class="setting-row multi-line">
+                <div class="setting-header">
+                    <label>Auto-Shuffle</label>
+                    <input type="checkbox" id="cfgNeverending" checked>
+                </div>
+                <div class="setting-hint">
+                    ON: Graveyard shuffles back into deck when empty.<br>
+                    OFF: Game ends when deck is empty.
+                </div>
             </div>
 
             <button id="btnNewGame" class="full-btn secondary-btn">New Game</button>
             <button id="btnResetRules" class="full-btn secondary-btn">Reset to Defaults</button>
             <button id="btnCloseSettings" class="full-btn primary-btn">Save & Close</button>
             <button id="btnCancelSettings" class="full-btn close-btn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Auto-Shuffle Flash Modal -->
+    <div id="autoShuffleFlash" class="auto-shuffle-flash hidden">
+        <div class="flash-content">
+            <span id="flashMessage">Auto-Shuffle: ON</span>
         </div>
     </div>
 
@@ -549,7 +611,8 @@
                 this.player2Wins = 0;
                 this.player1Points = 0;
                 this.player2Points = 0;
-                this.isEndlessMode = true; // Default to endless
+                this.isEndlessMode = true; // Default to endless/auto-shuffle
+                this._previousDeckCount = undefined; // Track deck count for reshuffle detection
 
                 this.el = {
                     oppWins: document.getElementById('oppWins'),
@@ -587,7 +650,9 @@
                     historyList: document.getElementById('historyList'),
                     totalWins: document.getElementById('totalWins'),
                     totalLosses: document.getElementById('totalLosses'),
-                    winRate: document.getElementById('winRate')
+                    winRate: document.getElementById('winRate'),
+                    autoShuffleFlash: document.getElementById('autoShuffleFlash'),
+                    flashMessage: document.getElementById('flashMessage')
                 };
 
                 this._bindEvents();
@@ -602,6 +667,10 @@
                 this.el.btnFlip.onclick = function() { self._flip(); };
                 this.el.btnResetGame.onclick = function() { self._resetGame(); };
                 this.el.btnNew.onclick = function() { self._initGame(); };
+
+                // Win label click to toggle Auto-Shuffle
+                this.el.yourWinDisplay.onclick = function() { self._toggleAutoShuffle(); };
+                this.el.oppWinDisplay.onclick = function() { self._toggleAutoShuffle(); };
 
                 // History Modal
                 this.el.btnHistory.onclick = function() {
@@ -789,6 +858,8 @@
                 // Add history entry BEFORE resetting points
                 if (winner) {
                     this._addHistoryEntry(winner === 'player1' ? 'win' : 'lose');
+                    // FIX: Update the history modal now that we added a new entry
+                    this._updateHistoryDisplay();
                 }
 
                 // Reset points for new game
@@ -837,6 +908,8 @@
 
                 // Add history entry BEFORE resetting points
                 this._addHistoryEntry(winner === 'player1' ? 'win' : 'lose');
+                // FIX: Update the history modal now that we added a new entry
+                this._updateHistoryDisplay();
 
                 // Reset points for new game
                 this.player1Points = 0;
@@ -891,6 +964,80 @@
                 }
             };
 
+            WarUI.prototype._toggleAutoShuffle = function() {
+                // Toggle the mode
+                this.isEndlessMode = !this.isEndlessMode;
+                WarRuleset.neverending = this.isEndlessMode;
+
+                // Sync settings checkbox
+                this.el.cfgNeverending.checked = this.isEndlessMode;
+
+                // Save to localStorage
+                this._saveSettings();
+
+                // Show flash message (0.5s or 0.25s for mode toggle)
+                this._showAutoShuffleFlash(this.isEndlessMode ? 'ON' : 'OFF', 250);
+
+                // Update display
+                this._updateWins();
+            };
+
+            WarUI.prototype._showAutoShuffleFlash = function(mode, duration) {
+                var self = this;
+                var flashDiv = this.el.autoShuffleFlash;
+                var messageSpan = this.el.flashMessage;
+
+                messageSpan.textContent = 'Auto-Shuffle: ' + mode;
+
+                // Show flash
+                flashDiv.classList.remove('hidden');
+                setTimeout(function() {
+                    flashDiv.classList.add('show');
+                }, 10);
+
+                // Auto-dismiss after duration
+                var dismissTimeout = setTimeout(function() {
+                    self._hideAutoShuffleFlash();
+                }, duration);
+
+                // Click to dismiss
+                flashDiv.onclick = function() {
+                    clearTimeout(dismissTimeout);
+                    self._hideAutoShuffleFlash();
+                };
+            };
+
+            WarUI.prototype._showAutoShuffleFireFlash = function() {
+                var self = this;
+                var flashDiv = this.el.autoShuffleFlash;
+                var messageSpan = this.el.flashMessage;
+
+                messageSpan.textContent = 'Auto-Shuffle!';
+
+                // Show flash (faster - 0.25s for firing)
+                flashDiv.classList.remove('hidden');
+                setTimeout(function() {
+                    flashDiv.classList.add('show');
+                }, 10);
+
+                var dismissTimeout = setTimeout(function() {
+                    self._hideAutoShuffleFlash();
+                }, 250);
+
+                flashDiv.onclick = function() {
+                    clearTimeout(dismissTimeout);
+                    self._hideAutoShuffleFlash();
+                };
+            };
+
+            WarUI.prototype._hideAutoShuffleFlash = function() {
+                var flashDiv = this.el.autoShuffleFlash;
+                flashDiv.classList.remove('show');
+                setTimeout(function() {
+                    flashDiv.classList.add('hidden');
+                }, 150);
+            };
+
             WarUI.prototype._renderCard = function(card, container, animate) {
                 var rankKey = RankToAsset[card.rank];
                 var suitKey = SuitToAsset[card.suit];
@@ -942,6 +1089,13 @@
 
                 console.log('[DECK UPDATE] P1:', player1.hand.count, 'P2:', player2.hand.count, 'Total:', totalCards, 'Graveyard:', WarRuleset._graveyard ? WarRuleset._graveyard.count : 0, 'WarPot:', WarRuleset._warPot ? WarRuleset._warPot.count : 0);
 
+                // Detect graveyard reshuffle: if deck count increased and we're in endless mode
+                if (this.isEndlessMode && this._previousDeckCount !== undefined && totalCards > this._previousDeckCount) {
+                    // Graveyard was reshuffled back into deck
+                    this._showAutoShuffleFireFlash();
+                }
+
+                this._previousDeckCount = totalCards;
                 this.el.deckCount.textContent = totalCards;
 
                 // Render shared deck if there are cards
@@ -1008,15 +1162,25 @@
                         var saved = JSON.parse(savedJson);
                         WarRuleset.deckCount = saved.deckCount || 1;
                         WarRuleset.twosHigh = saved.twosHigh || false;
-                        WarRuleset.neverending = saved.neverending !== undefined ? saved.neverending : true;
-                    } catch(e) {}
+                        
+                        // FIX: Explicitly check against false to ensure default is true
+                        WarRuleset.neverending = saved.neverending !== false;
+                    } catch(e) {
+                        WarRuleset.neverending = true;
+                    }
+                } else {
+                    // FIX: Default to true if no settings exist
+                    WarRuleset.neverending = true;
                 }
+                
                 this.el.cfgDecks.value = WarRuleset.deckCount || 1;
                 this.el.cfgTwosHigh.checked = WarRuleset.twosHigh || false;
-                this.el.cfgNeverending.checked = WarRuleset.neverending !== undefined ? WarRuleset.neverending : true;
+                
+                // Update checkbox to match the ruleset
+                this.el.cfgNeverending.checked = WarRuleset.neverending;
 
                 // Sync UI's endless mode flag
-                this.isEndlessMode = WarRuleset.neverending !== undefined ? WarRuleset.neverending : true;
+                this.isEndlessMode = WarRuleset.neverending;
             };
 
             WarUI.prototype._saveSettings = function() {
@@ -1039,7 +1203,7 @@
 
                 // Update display to reflect new mode
                 this._updateWins();
-                this._showMessage(this.isEndlessMode ? 'Endless mode enabled' : 'Non-endless mode enabled', '');
+                this._showMessage(this.isEndlessMode ? 'Auto-Shuffle Enabled' : 'Auto-Shuffle Disabled', '');
 
                 this.el.settingsModal.classList.add('hidden');
             };
