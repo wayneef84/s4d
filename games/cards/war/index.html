@@ -262,11 +262,13 @@
             color: white;
         }
 
-        .btn-reset-deck {
+        .btn-reset-game {
             background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
             color: white;
-            font-size: 0.9em;
-            padding: 12px 36px;
+            font-size: 0.75em;
+            padding: 8px 20px;
+            margin: 8px 12px;
+            align-self: center;
         }
 
         .btn-new {
@@ -427,8 +429,8 @@
             <div class="player-info">
                 <span class="player-name">Opponent</span>
                 <div class="score-display">
-                    <span class="score-item" id="oppWinDisplay" title="Click to toggle endless mode"><span id="oppWins">0</span></span>
-                    <span class="score-item" id="oppRoundsDisplay" title="Tap to see total rounds">Rounds: <span id="oppRounds">0</span></span>
+                    <span class="score-item" id="oppWinDisplay" title="Total wins"><span id="oppWins">0</span> wins</span>
+                    <span class="score-item" id="oppPointsDisplay" title="Points this game">Points: <span id="oppPoints">0</span></span>
                 </div>
             </div>
         </div>
@@ -454,21 +456,22 @@
             <div class="war-pot hidden" id="warPot">War pot: <span>0</span> cards</div>
         </div>
 
+        <button class="btn btn-reset-game" id="btnResetGame">🔄 Reset Game</button>
+
         <div class="player-zone">
             <div class="player-info">
                 <span class="player-name">You</span>
                 <div class="score-display">
-                    <span class="score-item" id="yourWinDisplay" title="Click to toggle endless mode"><span id="yourWins">0</span></span>
-                    <span class="score-item" id="yourRoundsDisplay" title="Tap to see total rounds">Rounds: <span id="yourRounds">0</span></span>
+                    <span class="score-item" id="yourWinDisplay" title="Total wins"><span id="yourWins">0</span> wins</span>
+                    <span class="score-item" id="yourPointsDisplay" title="Points this game">Points: <span id="yourPoints">0</span></span>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <div class="controls">
-        <div class="control-row" id="playRow" style="flex-direction: column; gap: 10px;">
+        <div class="control-row" id="playRow">
             <button class="btn btn-flip" id="btnFlip">Draw!</button>
-            <button class="btn btn-reset-deck" id="btnResetDeck">🔄 Reset Deck</button>
         </div>
         <div class="control-row hidden" id="gameOverRow">
             <button class="btn btn-new" id="btnNew">Play Again</button>
@@ -554,20 +557,19 @@
                 this.gameHistory = [];
                 this.player1Wins = 0;
                 this.player2Wins = 0;
-                this.player1Rounds = 0;
-                this.player2Rounds = 0;
-                this.totalRounds = 0;
+                this.player1Points = 0;
+                this.player2Points = 0;
                 this.isEndlessMode = true; // Default to endless
 
                 this.el = {
                     oppWins: document.getElementById('oppWins'),
                     yourWins: document.getElementById('yourWins'),
-                    oppRounds: document.getElementById('oppRounds'),
-                    yourRounds: document.getElementById('yourRounds'),
+                    oppPoints: document.getElementById('oppPoints'),
+                    yourPoints: document.getElementById('yourPoints'),
                     oppWinDisplay: document.getElementById('oppWinDisplay'),
                     yourWinDisplay: document.getElementById('yourWinDisplay'),
-                    oppRoundsDisplay: document.getElementById('oppRoundsDisplay'),
-                    yourRoundsDisplay: document.getElementById('yourRoundsDisplay'),
+                    oppPointsDisplay: document.getElementById('oppPointsDisplay'),
+                    yourPointsDisplay: document.getElementById('yourPointsDisplay'),
                     sharedDeck: document.getElementById('sharedDeck'),
                     deckCount: document.getElementById('deckCount'),
                     oppCard: document.getElementById('oppCard'),
@@ -577,7 +579,7 @@
                     playRow: document.getElementById('playRow'),
                     gameOverRow: document.getElementById('gameOverRow'),
                     btnFlip: document.getElementById('btnFlip'),
-                    btnResetDeck: document.getElementById('btnResetDeck'),
+                    btnResetGame: document.getElementById('btnResetGame'),
                     btnNew: document.getElementById('btnNew'),
                     btnHistory: document.getElementById('btnHistory'),
                     btnSettings: document.getElementById('btnSettings'),
@@ -608,28 +610,8 @@
             WarUI.prototype._bindEvents = function() {
                 var self = this;
                 this.el.btnFlip.onclick = function() { self._flip(); };
-                this.el.btnResetDeck.onclick = function() { self._resetDeck(); };
+                this.el.btnResetGame.onclick = function() { self._resetGame(); };
                 this.el.btnNew.onclick = function() { self._initGame(); };
-
-                // Toggle endless mode on win display click
-                this.el.yourWinDisplay.onclick = function() {
-                    self.isEndlessMode = !self.isEndlessMode;
-                    WarRuleset.neverending = self.isEndlessMode;
-                    self._updateWins();
-                };
-                this.el.oppWinDisplay.onclick = function() {
-                    self.isEndlessMode = !self.isEndlessMode;
-                    WarRuleset.neverending = self.isEndlessMode;
-                    self._updateWins();
-                };
-
-                // Show total rounds on rounds display tap
-                this.el.yourRoundsDisplay.onclick = function() {
-                    self._showMessage('Total rounds played: ' + self.totalRounds, '');
-                };
-                this.el.oppRoundsDisplay.onclick = function() {
-                    self._showMessage('Total rounds played: ' + self.totalRounds, '');
-                };
 
                 // History Modal
                 this.el.btnHistory.onclick = function() {
@@ -727,10 +709,10 @@
                 this.currentPlayer2Card = null;
                 this.player1Wins = 0;
                 this.player2Wins = 0;
-                this.player1Rounds = 0;
-                this.player2Rounds = 0;
+                this.player1Points = 0;
+                this.player2Points = 0;
                 this._updateWins();
-                this._updateRounds();
+                this._updatePoints();
             };
 
             WarUI.prototype._flip = function() {
@@ -743,12 +725,6 @@
                 if (player1.hand.count === 0 || player2.hand.count === 0) {
                     return;
                 }
-
-                // Increment rounds on every flip (not just wins)
-                this.totalRounds++;
-                this.player1Rounds++;
-                this.player2Rounds++;
-                this._updateRounds();
 
                 // Store and render cards BEFORE they move to war pot
                 var card1 = player1.hand.contents[0];
@@ -775,19 +751,65 @@
                     return;
                 }
 
-                // Wins only increment in non-endless mode
-                // (In endless mode, wins stay at infinity)
+                // Points increment when a player wins a round
+                if (event.winner === 'player1') {
+                    this.player1Points++;
+                } else if (event.winner === 'player2') {
+                    this.player2Points++;
+                }
+                this._updatePoints();
+
+                // Check for deck depletion in non-endless mode
                 if (!this.isEndlessMode) {
-                    if (event.winner === 'player1') {
-                        this.player1Wins++;
-                    } else if (event.winner === 'player2') {
-                        this.player2Wins++;
+                    var state = this.engine.getGameState();
+                    var player1 = state.players[0];
+                    var player2 = state.players[1];
+                    var totalCards = player1.hand.count + player2.hand.count;
+
+                    // If deck is depleted or about to be (last cards drawn)
+                    if (totalCards === 0 || (totalCards === 2 && !WarRuleset._warMode)) {
+                        this._handleDeckDepletion();
                     }
-                    this._updateWins();
                 }
 
-                // Rounds are already incremented in _flip(), not here
-                console.log('[DEBUG] After round win - P1 wins:', this.player1Wins, 'P1 rounds:', this.player1Rounds, 'Endless:', this.isEndlessMode);
+                console.log('[DEBUG] After round win - P1 points:', this.player1Points, 'P2 points:', this.player2Points, 'Endless:', this.isEndlessMode);
+            };
+
+            WarUI.prototype._handleDeckDepletion = function() {
+                var winner;
+                var message;
+
+                // Determine winner based on points
+                if (this.player1Points > this.player2Points) {
+                    this.player1Wins++;
+                    winner = 'player1';
+                    message = '🎉 You Win! (' + this.player1Points + ' points vs ' + this.player2Points + ')';
+                } else if (this.player2Points > this.player1Points) {
+                    this.player2Wins++;
+                    winner = 'player2';
+                    message = 'Opponent Wins! (' + this.player2Points + ' points vs ' + this.player1Points + ')';
+                } else {
+                    // Tie - no win awarded
+                    message = 'Tie Game! Both had ' + this.player1Points + ' points';
+                }
+
+                this._updateWins();
+                this._showMessage(message, winner === 'player1' ? 'win' : (winner === 'player2' ? 'lose' : ''));
+
+                if (winner) {
+                    this._addHistoryEntry(winner === 'player1' ? 'win' : 'lose');
+                }
+
+                // Reset points for new game
+                this.player1Points = 0;
+                this.player2Points = 0;
+                this._updatePoints();
+
+                // Auto-reset deck and continue game after short delay
+                var self = this;
+                setTimeout(function() {
+                    self._resetDeckAndContinue();
+                }, 2000);
             };
 
             WarUI.prototype._handleResolution = function(event) {
@@ -823,11 +845,10 @@
                 this._updateWins();
                 this._addHistoryEntry(winner === 'player1' ? 'win' : 'lose');
 
-                // Reset rounds for new game
-                this.player1Rounds = 0;
-                this.player2Rounds = 0;
-                this.totalRounds = 0;
-                this._updateRounds();
+                // Reset points for new game
+                this.player1Points = 0;
+                this.player2Points = 0;
+                this._updatePoints();
 
                 // Auto-reset deck and continue game after short delay
                 var self = this;
@@ -850,10 +871,10 @@
                 console.log('[RESET] Deck reset - fresh 52 cards dealt');
             };
 
-            WarUI.prototype._resetDeck = function() {
+            WarUI.prototype._resetGame = function() {
                 if (this.isEndlessMode) {
                     // Endless mode: Keep stats, just reset deck
-                    if (confirm('Reset deck? Stats will be preserved.')) {
+                    if (confirm('Reset game? Stats will be preserved.')) {
                         this._resetDeckAndContinue();
                     }
                 } else {
@@ -946,9 +967,9 @@
                 }
             };
 
-            WarUI.prototype._updateRounds = function() {
-                this.el.yourRounds.textContent = this.player1Rounds;
-                this.el.oppRounds.textContent = this.player2Rounds;
+            WarUI.prototype._updatePoints = function() {
+                this.el.yourPoints.textContent = this.player1Points;
+                this.el.oppPoints.textContent = this.player2Points;
             };
 
             WarUI.prototype._updateWarPot = function() {
@@ -986,12 +1007,15 @@
                         var saved = JSON.parse(savedJson);
                         WarRuleset.deckCount = saved.deckCount || 1;
                         WarRuleset.twosHigh = saved.twosHigh || false;
-                        WarRuleset.neverending = saved.neverending || false;
+                        WarRuleset.neverending = saved.neverending !== undefined ? saved.neverending : true;
                     } catch(e) {}
                 }
                 this.el.cfgDecks.value = WarRuleset.deckCount || 1;
                 this.el.cfgTwosHigh.checked = WarRuleset.twosHigh || false;
-                this.el.cfgNeverending.checked = WarRuleset.neverending || false;
+                this.el.cfgNeverending.checked = WarRuleset.neverending !== undefined ? WarRuleset.neverending : true;
+
+                // Sync UI's endless mode flag
+                this.isEndlessMode = WarRuleset.neverending !== undefined ? WarRuleset.neverending : true;
             };
 
             WarUI.prototype._saveSettings = function() {
@@ -1003,11 +1027,18 @@
                 WarRuleset.twosHigh = this.el.cfgTwosHigh.checked;
                 WarRuleset.neverending = this.el.cfgNeverending.checked;
 
+                // Update UI's endless mode flag
+                this.isEndlessMode = WarRuleset.neverending;
+
                 localStorage.setItem('war_config', JSON.stringify({
                     deckCount: WarRuleset.deckCount,
                     twosHigh: WarRuleset.twosHigh,
                     neverending: WarRuleset.neverending
                 }));
+
+                // Update display to reflect new mode
+                this._updateWins();
+                this._showMessage(this.isEndlessMode ? 'Endless mode enabled' : 'Non-endless mode enabled', '');
 
                 this.el.settingsModal.classList.add('hidden');
             };
