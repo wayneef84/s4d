@@ -13,6 +13,121 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## 📦 Dependency Management (Federated Architecture)
+
+**Status:** Implemented 2026-01-17
+**Policy:** Opt-in upgrades with manual testing gates
+
+### Overview
+
+This project uses a **federated architecture** where:
+- **Shared libraries** (like `games/cards/shared`) are versioned independently
+- **Games** declare exact library versions they use (pinned dependencies)
+- **Upgrades are opt-in**: Games only upgrade when explicitly tested and approved
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `/INFO.md` | Master registry (library versions + project dependencies) |
+| `[library]/INFO.md` | Library changelog, API stability, breaking changes |
+| `[game]/INFO.md` | Game metadata + dependency locks |
+| `admin/DEPENDENCY_POLICY.md` | Full policy and workflow documentation |
+| `admin/UPGRADE_CHECKLIST.md` | Step-by-step upgrade procedure |
+
+### For Root Claude (Architecture Agent)
+
+**On Every Session Start:**
+1. Read `/INFO.md` to understand version landscape
+2. Note library versions and project dependencies
+
+**When User Works on a Game:**
+1. Read game's `INFO.md` to see declared dependencies
+2. Compare with `/INFO.md` library registry
+3. If newer library version exists:
+   - Alert user with upgrade prompt
+   - Show changelog summary
+   - Offer: Upgrade now / Defer / Show details
+   - Wait for user decision
+
+**Upgrade Alert Format:**
+```
+🔔 Dependency Update Available
+
+Game: [Game Name]
+Current: [Library] v[Old]
+Latest: [Library] v[New]
+
+Changes:
+- [Key changes from changelog]
+
+Type: Patch / Minor / Major
+Breaking Changes: Yes/No
+
+Actions:
+[1] Upgrade now
+[2] Show full changelog
+[3] Defer
+```
+
+**If User Approves Upgrade:**
+1. Update game's `INFO.md` dependency version
+2. Add entry to upgrade history
+3. Instruct user to test thoroughly
+4. After successful test, commit changes
+
+**If Library Has Breaking Changes (Major Version):**
+1. Do NOT auto-update any games
+2. Create migration plan using template in `admin/migrations/`
+3. Update `/INFO.md` with 🔴 indicator
+4. Wait for user to migrate each game individually
+
+### For Sub-Project Claude (Game Developer)
+
+**On Session Start:**
+1. Read your game's `INFO.md` to know dependency versions
+2. Use only APIs available in your declared versions
+
+**If User Asks for Newer Library Feature:**
+1. Check if feature exists in current library version
+2. If newer: Alert "That requires [Library] vX.Y. You're on vX.0. Upgrade?"
+3. If approved: Update `INFO.md`, proceed
+4. If declined: Find alternative with current version
+
+**Never:**
+- ❌ Use library APIs newer than declared version
+- ❌ Auto-upgrade dependencies without approval
+- ❌ Modify other games' INFO.md files
+
+### Version Control Rules
+
+**Semantic Versioning:**
+- **Patch (x.y.Z)**: Bug fixes, no API changes → Safe to upgrade
+- **Minor (x.Y.0)**: New features, backwards compatible → Upgrade when convenient
+- **Major (X.0.0)**: Breaking changes → Requires migration plan
+
+**Status Indicators (in `/INFO.md`):**
+- ✅ Up-to-date
+- ⚠️ Update available (minor/patch)
+- 🔴 Migration needed (major)
+- 📌 Pinned (deliberately on old version)
+
+### Quick Reference
+
+**To Upgrade a Game:**
+1. Read `admin/UPGRADE_CHECKLIST.md`
+2. Update game's `INFO.md` dependency version
+3. Test thoroughly
+4. Commit if successful, revert if not
+
+**To Release New Library Version:**
+1. Update `[library]/INFO.md` with changelog
+2. Update `/INFO.md` library registry
+3. Games stay on old version until manually upgraded
+4. If major version: Create migration plan first
+
+---
+
 ## 🚧 CURRENT PRIORITY: Card Engine Bug Fixes
 
 **Status:** Core engine built, needs Terminal Check Gate implementation and Safari fixes.
