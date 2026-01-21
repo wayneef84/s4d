@@ -11,6 +11,7 @@ class WordGame {
         this.progressEl = document.getElementById('word-progress');
         this.msgEl = document.getElementById('message-area');
         this.modeSelectEl = document.getElementById('guidanceSelect');
+        this.wordSelectEl = document.getElementById('wordSelect');
         this.backToMenuBtn = document.getElementById('back-to-menu');
 
         // Image UI
@@ -61,10 +62,72 @@ class WordGame {
             } catch(e) { console.error("Save data corrupted", e); }
         }
 
-        // 3. Setup
+        // 3. Check URL parameters
+        var params = this.parseURLParams();
+
+        // 4. Setup
         this.renderMenu();
         this.setupEvents();
         requestAnimationFrame(() => this.loop());
+
+        // 5. Load word from URL if provided
+        if (params.word) {
+            this.loadFromURL(params);
+        }
+    }
+
+    parseURLParams() {
+        var params = {};
+        var searchParams = new URLSearchParams(window.location.search);
+        params.id = searchParams.get('id');
+        params.word = searchParams.get('word');
+        params.emoji = searchParams.get('emoji');
+        return params;
+    }
+
+    loadFromURL(params) {
+        var self = this;
+        if (params.id === 'custom' && params.word) {
+            // Custom word mode
+            setTimeout(function() {
+                self.startCustomWord(params.word, params.emoji);
+            }, 50);
+        } else if (params.word) {
+            // Look up word in word lists
+            var word = params.word;
+            var found = self.defaultWords.indexOf(word) !== -1 ||
+                       self.customWords.indexOf(word) !== -1;
+            if (found) {
+                setTimeout(function() {
+                    self.startWord(word);
+                }, 50);
+            }
+        }
+    }
+
+    startCustomWord(word, emoji) {
+        this.currentWord = word;
+        this.letterIndex = 0;
+        this.isCustomWord = true;
+        this.customEmoji = emoji || null;
+
+        this.menuView.style.display = 'none';
+        this.gameView.classList.add('active');
+
+        // Populate word selector dropdown (will show "Custom" only, disabled)
+        this.populateWordSelector();
+
+        // Update URL
+        this.updateURL(word);
+
+        this.updateImageDisplay();
+
+        var self = this;
+        setTimeout(function() {
+            self.resize();
+            self.loadLetter(self.currentWord[0]);
+            self.updateProgressBar();
+        }, 50);
     }
 
     // --- MENU SYSTEM ---
@@ -152,17 +215,90 @@ class WordGame {
     startWord(word) {
         this.currentWord = word;
         this.letterIndex = 0;
+        this.isCustomWord = false;
+        this.customEmoji = null;
 
         this.menuView.style.display = 'none';
         this.gameView.classList.add('active');
 
+        // Populate word selector dropdown
+        this.populateWordSelector();
+
+        // Update URL
+        this.updateURL(word);
+
         this.updateImageDisplay();
 
-        setTimeout(() => {
-            this.resize();
-            this.loadLetter(this.currentWord[0]);
-            this.updateProgressBar();
+        var self = this;
+        setTimeout(function() {
+            self.resize();
+            self.loadLetter(self.currentWord[0]);
+            self.updateProgressBar();
         }, 50);
+    }
+
+    populateWordSelector() {
+        var self = this;
+        this.wordSelectEl.innerHTML = '';
+
+        if (this.isCustomWord) {
+            // Custom word mode - show only "Custom" option, disabled
+            var opt = document.createElement('option');
+            opt.value = 'custom';
+            opt.textContent = 'Custom';
+            opt.selected = true;
+            this.wordSelectEl.appendChild(opt);
+            this.wordSelectEl.disabled = true;
+            this.wordSelectEl.style.opacity = '0.6';
+            this.wordSelectEl.style.cursor = 'not-allowed';
+        } else {
+            // Normal mode - populate with all words
+            this.wordSelectEl.disabled = false;
+            this.wordSelectEl.style.opacity = '1';
+            this.wordSelectEl.style.cursor = 'pointer';
+
+            // Add all default words
+            this.defaultWords.forEach(function(w) {
+                var opt = document.createElement('option');
+                opt.value = w;
+                opt.textContent = w;
+                if (w === self.currentWord) opt.selected = true;
+                self.wordSelectEl.appendChild(opt);
+            });
+
+            // Add all custom words
+            this.customWords.forEach(function(w) {
+                var opt = document.createElement('option');
+                opt.value = w;
+                opt.textContent = w + ' ⭐';
+                if (w === self.currentWord) opt.selected = true;
+                self.wordSelectEl.appendChild(opt);
+            });
+
+            // Handle word selection change
+            this.wordSelectEl.onchange = function() {
+                var selectedWord = self.wordSelectEl.value;
+                if (selectedWord && selectedWord !== self.currentWord) {
+                    self.startWord(selectedWord);
+                }
+            };
+        }
+    }
+
+    updateURL(word) {
+        var url = new URL(window.location);
+        if (this.isCustomWord) {
+            url.searchParams.set('id', 'custom');
+            url.searchParams.set('word', word);
+            if (this.customEmoji) {
+                url.searchParams.set('emoji', this.customEmoji);
+            }
+        } else {
+            url.searchParams.delete('id');
+            url.searchParams.set('word', word);
+            url.searchParams.delete('emoji');
+        }
+        history.pushState({word: word}, '', url);
     }
 
     updateImageDisplay() {
@@ -171,8 +307,16 @@ class WordGame {
             return;
         }
 
+        // Check for custom emoji first (from URL parameter)
+        var emoji;
+        if (this.isCustomWord && this.customEmoji) {
+            emoji = this.customEmoji;
+        } else {
+            emoji = this.getEmojiForWord(this.currentWord);
+        }
+
         // Show emoji fallback for the word
-        this.imageFallback.textContent = this.getEmojiForWord(this.currentWord);
+        this.imageFallback.textContent = emoji;
         this.imageFallback.style.display = 'block';
         this.wordImage.classList.add('hidden');
         this.imageArea.classList.remove('hidden');
@@ -509,19 +653,37 @@ class WordGame {
     getPos(e) { const rect = this.canvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
 
     setupEvents() {
-        window.addEventListener('resize', () => this.resize());
-        if(this.backToMenuBtn) this.backToMenuBtn.onclick = () => this.backToMenu();
-        if(this.modeSelectEl) this.modeSelectEl.onchange = (e) => {
-            this.guidanceMode = e.target.value;
-            this.draw();
-        };
-        
-        this.saveBtn.onclick = () => this.saveNewWord();
-        this.cancelBtn.onclick = () => this.closeModal();
-        
-        this.canvas.addEventListener('pointerdown', (e) => this.startDraw(e));
-        this.canvas.addEventListener('pointermove', (e) => this.moveDraw(e));
-        this.canvas.addEventListener('pointerup', () => this.endDraw());
+        var self = this;
+        window.addEventListener('resize', function() { self.resize(); });
+
+        if(this.backToMenuBtn) {
+            this.backToMenuBtn.onclick = function() { self.backToMenu(); };
+        }
+
+        if(this.modeSelectEl) {
+            this.modeSelectEl.onchange = function(e) {
+                self.guidanceMode = e.target.value;
+                self.draw();
+            };
+        }
+
+        this.saveBtn.onclick = function() { self.saveNewWord(); };
+        this.cancelBtn.onclick = function() { self.closeModal(); };
+
+        this.canvas.addEventListener('pointerdown', function(e) { self.startDraw(e); });
+        this.canvas.addEventListener('pointermove', function(e) { self.moveDraw(e); });
+        this.canvas.addEventListener('pointerup', function() { self.endDraw(); });
+
+        // Browser back/forward button support
+        window.addEventListener('popstate', function(e) {
+            var params = self.parseURLParams();
+            if (params.word) {
+                self.loadFromURL(params);
+            } else {
+                // No parameters - return to menu
+                self.backToMenu();
+            }
+        });
     }
 
     createParticles(x, y) { for(let i=0; i<30; i++) { this.particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10, life: 1.0, color: ['#ff0', '#f00', '#0f0', '#00f'][Math.floor(Math.random()*4)] }); } }

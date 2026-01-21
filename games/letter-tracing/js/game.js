@@ -42,17 +42,71 @@ class LetterGame {
         if (window.GAME_CONTENT) {
             this.globalConfig = window.GAME_CONTENT.globalAudio || {};
             this.allPacks = window.GAME_CONTENT.packs;
-            
+
             this.populatePackSelector();
             this.setupModeSelector();
             this.setupSettings();
 
-            if (this.allPacks.length > 0) this.loadPack(0);
+            // Check URL parameters
+            var params = this.parseURLParams();
+            var loadedFromURL = false;
+
+            if (params.pack && params.letter) {
+                loadedFromURL = this.loadFromURL(params);
+            }
+
+            // If no URL params or loading failed, load default pack
+            if (!loadedFromURL && this.allPacks.length > 0) {
+                this.loadPack(0);
+            }
 
             this.setupEvents();
             this.resize();
             requestAnimationFrame(() => this.loop());
         }
+    }
+
+    parseURLParams() {
+        var params = {};
+        var searchParams = new URLSearchParams(window.location.search);
+        params.pack = searchParams.get('pack');
+        params.letter = searchParams.get('letter');
+        return params;
+    }
+
+    loadFromURL(params) {
+        var packIndex = -1;
+
+        // Find pack by ID (e.g., 'lowercase', 'uppercase', 'custom')
+        if (params.pack === 'custom') {
+            // Custom mode: search all packs for the letter
+            packIndex = this.findPackWithLetter(params.letter);
+        } else {
+            // Find specific pack by ID
+            packIndex = this.allPacks.findIndex(function(p) {
+                return p.id === params.pack;
+            });
+        }
+
+        if (packIndex !== -1) {
+            this.loadPack(packIndex);
+            // Check if letter exists in this pack
+            if (this.currentPack.items[params.letter]) {
+                this.selectLetter(params.letter);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    findPackWithLetter(letter) {
+        for (var i = 0; i < this.allPacks.length; i++) {
+            if (this.allPacks[i].items[letter]) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     setupSettings() {
@@ -116,7 +170,7 @@ class LetterGame {
     selectLetter(char) {
         this.currentLetter = char;
         const data = this.currentPack.items[char];
-        
+
         // Handle Rich Format vs Simple Array
         let instructionData = [];
         if (Array.isArray(data)) {
@@ -126,15 +180,27 @@ class LetterGame {
         }
 
         this.strokes = instructionData.map(instr => this.generatePoints(instr));
-        
+
         this.resetProgress();
         this.msgEl.classList.add('hidden');
         this.draw();
-        
+
         document.querySelectorAll('.letter-btn').forEach(btn => {
             btn.classList.remove('active');
             if (btn.textContent === char) btn.classList.add('active');
         });
+
+        // Update URL
+        this.updateURL();
+    }
+
+    updateURL() {
+        if (!this.currentPack || !this.currentLetter) return;
+
+        var url = new URL(window.location);
+        url.searchParams.set('pack', this.currentPack.id);
+        url.searchParams.set('letter', this.currentLetter);
+        history.pushState({pack: this.currentPack.id, letter: this.currentLetter}, '', url);
     }
 
     resetProgress() {
@@ -395,11 +461,25 @@ class LetterGame {
     }
     getPos(e) { const rect = this.canvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
     setupEvents() {
-        window.addEventListener('resize', () => this.resize());
-        this.canvas.addEventListener('pointerdown', (e) => this.startDraw(e));
-        this.canvas.addEventListener('pointermove', (e) => this.moveDraw(e));
-        this.canvas.addEventListener('pointerup', () => this.endDraw());
-        this.canvas.addEventListener('pointerleave', () => this.endDraw());
+        var self = this;
+        window.addEventListener('resize', function() { self.resize(); });
+        this.canvas.addEventListener('pointerdown', function(e) { self.startDraw(e); });
+        this.canvas.addEventListener('pointermove', function(e) { self.moveDraw(e); });
+        this.canvas.addEventListener('pointerup', function() { self.endDraw(); });
+        this.canvas.addEventListener('pointerleave', function() { self.endDraw(); });
+
+        // Browser back/forward button support
+        window.addEventListener('popstate', function(e) {
+            var params = self.parseURLParams();
+            if (params.pack && params.letter) {
+                self.loadFromURL(params);
+            } else {
+                // No parameters - load default pack
+                if (self.allPacks.length > 0) {
+                    self.loadPack(0);
+                }
+            }
+        });
     }
     createParticles(x, y) { for(let i=0; i<30; i++) { this.particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10, life: 1.0, color: ['#ff0', '#f00', '#0f0', '#00f'][Math.floor(Math.random()*4)] }); } }
     updateParticles() {
