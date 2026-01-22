@@ -250,7 +250,9 @@ class SlotMachine {
         this.reelData = [];
         for(let i=0; i<5; i++) {
             const col = [];
-            for(let j=0; j<7; j++) col.push(this.getRandomSymbol());
+            // Increase from 7 to 12 symbols for better 3D cylinder coverage
+            const symbolCount = this.enable3D ? 12 : 7;
+            for(let j=0; j<symbolCount; j++) col.push(this.getRandomSymbol());
             this.reelData.push(col);
         }
     }
@@ -747,6 +749,17 @@ class SlotMachine {
     draw3DReels() {
         // Draw each reel as a 3D cylinder
         for (let x = 0; x < 5; x++) {
+            // First, draw cylinder background/base (fills the entire reel area)
+            const gradient = this.ctx.createLinearGradient(
+                x * this.colWidth, 0,
+                (x + 1) * this.colWidth, 0
+            );
+            gradient.addColorStop(0, '#1a1a1a');
+            gradient.addColorStop(0.5, '#2a2a2a');
+            gradient.addColorStop(1, '#1a1a1a');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(x * this.colWidth, 0, this.colWidth, this.canvas.height);
+
             const reelSymbols = this.reelData[x];
 
             // Sort symbols by depth (back to front) for proper layering
@@ -761,7 +774,10 @@ class SlotMachine {
                 const currentAngle = (rotationAngle + baseAngle) % (Math.PI * 2);
                 const zDepth = Math.sin(currentAngle) * this.cylinderRadius;
 
-                symbolsWithDepth.push({ symbol, y, zDepth });
+                // Use the same positioning as 2D mode for consistency
+                const baseY = (y * this.rowHeight) - this.rowHeight;
+
+                symbolsWithDepth.push({ symbol, y, zDepth, baseY });
             }
 
             // Sort by depth (furthest first)
@@ -770,7 +786,7 @@ class SlotMachine {
             // Draw symbols in depth order
             for (const item of symbolsWithDepth) {
                 const px = x * this.colWidth;
-                const py = (item.y * this.rowHeight) - this.rowHeight;
+                const py = item.baseY;
 
                 this.drawCylinder3D(item.symbol, px, py, x, item.y);
             }
@@ -825,8 +841,9 @@ class SlotMachine {
         const zDepth = Math.sin(currentAngle) * this.cylinderRadius;
         const yOffset = Math.cos(currentAngle) * this.cylinderRadius;
 
-        // Skip if symbol is on back of cylinder
-        if (Math.cos(currentAngle) < -0.2) return;
+        // Skip if symbol is on back of cylinder (more aggressive culling)
+        // Only render symbols facing forward (cos > 0 means front-facing)
+        if (Math.cos(currentAngle) < 0.1) return;
 
         // Perspective scaling
         const perspectiveFactor = 0.5;
@@ -878,9 +895,10 @@ class SlotMachine {
     }
 
     drawCylinderSegment(x, y, scale, symbol, lightIntensity, angle) {
-        const p = 4;
+        const p = 2; // Reduced padding for better coverage
         const w = this.colWidth - p * 2;
-        const h = (this.rowHeight - p * 2) * scale;
+        // Make segments taller to fill gaps (1.5x height)
+        const h = (this.rowHeight * 1.5 - p * 2) * scale;
         const centerY = y + (this.rowHeight / 2);
         const scaledY = centerY - (h / 2);
 
