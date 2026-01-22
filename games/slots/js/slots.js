@@ -68,6 +68,15 @@ class SlotMachine {
         this.winTimestamp = 0;
         this.winAnimationActive = false;
 
+        // 3D Rendering State
+        this.enable3D = true; // Toggle for 3D rendering
+        this.reelRotations = [0, 0, 0, 0, 0]; // Rotation angles in radians
+        this.reelAngularVelocity = [0, 0, 0, 0, 0]; // Rad/frame
+        this.cylinderSegments = this.isMobile ? 4 : 8; // Number of visible faces per cylinder
+        this.cylinderRadius = 50; // Will be updated after canvas resize
+        this.lastTickAngles = [0, 0, 0, 0, 0]; // For tick sound timing
+        this.reelStopTimes = [0, 0, 0, 0, 0]; // When each reel should start stopping
+
         // Bonus System
         this.bonusMode = null; // 'freespins', 'expandingwilds', or null
         this.freeSpinsRemaining = 0;
@@ -168,6 +177,7 @@ class SlotMachine {
 
         this.colWidth = displayWidth / GAME_CONFIG.grid.reels;
         this.rowHeight = displayHeight / GAME_CONFIG.grid.rows;
+        this.cylinderRadius = this.rowHeight / 2; // Update cylinder radius
         this.drawGameFrame();
     }
 
@@ -280,7 +290,23 @@ class SlotMachine {
         this.updateUI();
         this.saveGame();
 
-        this.reelSpeeds = this.reelSpeeds.map(() => 25 + Math.random() * 10);
+        if (this.enable3D) {
+            // Initialize 3D rotational animation
+            this.reelAngularVelocity = [
+                0.4 + Math.random() * 0.1,
+                0.4 + Math.random() * 0.1,
+                0.4 + Math.random() * 0.1,
+                0.4 + Math.random() * 0.1,
+                0.4 + Math.random() * 0.1
+            ];
+            // Stagger stop times (sequential stopping)
+            this.reelStopTimes = [2000, 2200, 2400, 2600, 2800];
+            this.lastTickAngles = [0, 0, 0, 0, 0];
+        } else {
+            // Original 2D animation
+            this.reelSpeeds = this.reelSpeeds.map(() => 25 + Math.random() * 10);
+        }
+
         this.generateReelData();
         this.spinStartTime = Date.now();
 
@@ -312,21 +338,57 @@ class SlotMachine {
         let active = false;
 
         for(let i=0; i<5; i++) {
-            if(this.reelSpeeds[i] > 0) {
-                if(now - this.spinStartTime > 2000 + (i*200)) {
-                    this.reelSpeeds[i] *= 0.92;
-                    if(this.reelSpeeds[i] < 0.5) {
-                        this.reelSpeeds[i] = 0;
-                        this.reelOffsets[i] = 0;
-                        // if(this.audio) this.audio.playClick(); // Tick sound
-                    } else active = true;
-                } else active = true;
+            if (this.enable3D) {
+                // 3D rotational animation
+                if(this.reelAngularVelocity[i] > 0) {
+                    if(now - this.spinStartTime > this.reelStopTimes[i]) {
+                        // Apply deceleration
+                        this.reelAngularVelocity[i] *= 0.90;
 
-                this.reelOffsets[i] += this.reelSpeeds[i];
-                if(this.reelOffsets[i] > this.rowHeight) {
-                    this.reelOffsets[i] -= this.rowHeight;
-                    this.reelData[i].unshift(this.getRandomSymbol());
-                    this.reelData[i].pop();
+                        if(this.reelAngularVelocity[i] < 0.02) {
+                            this.reelAngularVelocity[i] = 0;
+                            this.snapReelToSymbol(i);
+                            if(this.audio) this.audio.playClick(); // Stop sound
+                        } else {
+                            active = true;
+                        }
+                    } else {
+                        active = true;
+                    }
+
+                    // Update rotation
+                    this.reelRotations[i] += this.reelAngularVelocity[i];
+
+                    // Cycle symbols when full rotation occurs
+                    const symbolAngle = (Math.PI * 2) / this.reelData[i].length;
+                    if(this.reelRotations[i] >= symbolAngle) {
+                        this.reelRotations[i] -= symbolAngle;
+                        this.reelData[i].unshift(this.getRandomSymbol());
+                        this.reelData[i].pop();
+                    }
+
+                    // Play tick sound at intervals
+                    if(this.shouldPlayTick(i)) {
+                        if(this.audio) this.audio.playClick(); // Tick sound
+                    }
+                }
+            } else {
+                // Original 2D offset animation
+                if(this.reelSpeeds[i] > 0) {
+                    if(now - this.spinStartTime > 2000 + (i*200)) {
+                        this.reelSpeeds[i] *= 0.92;
+                        if(this.reelSpeeds[i] < 0.5) {
+                            this.reelSpeeds[i] = 0;
+                            this.reelOffsets[i] = 0;
+                        } else active = true;
+                    } else active = true;
+
+                    this.reelOffsets[i] += this.reelSpeeds[i];
+                    if(this.reelOffsets[i] > this.rowHeight) {
+                        this.reelOffsets[i] -= this.rowHeight;
+                        this.reelData[i].unshift(this.getRandomSymbol());
+                        this.reelData[i].pop();
+                    }
                 }
             }
         }
@@ -620,24 +682,18 @@ class SlotMachine {
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0,0,this.canvas.width, this.canvas.height);
 
-        // 1. Symbol Backgrounds
-        for(let x=0; x<5; x++) {
-            for(let y=0; y<5; y++) {
-                if(this.reelData[x][y]) {
-                    const s = this.reelData[x][y];
-                    const px = x * this.colWidth;
-                    const py = (y * this.rowHeight) + this.reelOffsets[x] - this.rowHeight;
-                    const isWin = this.winningCells.has(`${x},${y-1}`); // Visual offset check
-                    
-                    this.drawCard(s, px, py, isWin);
-                }
-            }
-            // Divider Lines
-            this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-            this.ctx.beginPath(); this.ctx.moveTo(x*this.colWidth,0); this.ctx.lineTo(x*this.colWidth,850); this.ctx.stroke();
+        if (this.enable3D) {
+            // 3D Cylinder Rendering
+            this.draw3DReels();
+        } else {
+            // Original 2D flat rendering
+            this.draw2DReels();
         }
 
-        // 2. Win Lines (On Top) - Enhanced Animations with Left-to-Right Progress
+    }
+
+    drawWinLinesAndEffects() {
+        // Win Lines (On Top) - Enhanced Animations with Left-to-Right Progress
         if(!this.isSpinning && this.winningLines.length > 0) {
             // Use simplified rendering on mobile for better performance
             if (this.isMobile) {
@@ -647,7 +703,92 @@ class SlotMachine {
             }
         }
 
-        // 3. Symbol Text (On Top of Lines)
+        // Symbol Text (only for 2D mode, 3D draws symbols directly)
+        if (!this.enable3D) {
+            for(let x=0; x<5; x++) {
+                for(let y=0; y<5; y++) {
+                    if(this.reelData[x][y]) {
+                        const s = this.reelData[x][y];
+                        const px = x * this.colWidth;
+                        const py = (y * this.rowHeight) + this.reelOffsets[x] - this.rowHeight;
+                        const isWin = this.winningCells.has(`${x},${y-1}`);
+                        this.drawText(s, px, py, isWin);
+                    }
+                }
+            }
+        }
+
+        // Particles
+        this.particles.forEach(p => p.draw(this.ctx));
+    }
+
+    // === 3D CYLINDER RENDERING SYSTEM ===
+
+    snapReelToSymbol(reelIndex) {
+        // Snap rotation to nearest symbol position
+        const symbolAngle = (Math.PI * 2) / this.reelData[reelIndex].length;
+        const targetAngle = Math.round(this.reelRotations[reelIndex] / symbolAngle) * symbolAngle;
+        this.reelRotations[reelIndex] = targetAngle;
+    }
+
+    shouldPlayTick(reelIndex) {
+        // Play tick every 45 degrees of rotation
+        const tickAngle = Math.PI / 4;
+        const lastTick = this.lastTickAngles[reelIndex] || 0;
+        const currentAngle = this.reelRotations[reelIndex];
+
+        if (currentAngle - lastTick >= tickAngle) {
+            this.lastTickAngles[reelIndex] = currentAngle;
+            return true;
+        }
+        return false;
+    }
+
+    draw3DReels() {
+        // Draw each reel as a 3D cylinder
+        for (let x = 0; x < 5; x++) {
+            const reelSymbols = this.reelData[x];
+
+            // Sort symbols by depth (back to front) for proper layering
+            const symbolsWithDepth = [];
+            for (let y = 0; y < reelSymbols.length; y++) {
+                const symbol = reelSymbols[y];
+                if (!symbol) continue;
+
+                const rotationAngle = this.reelRotations[x];
+                const anglePerSymbol = (Math.PI * 2) / reelSymbols.length;
+                const baseAngle = y * anglePerSymbol;
+                const currentAngle = (rotationAngle + baseAngle) % (Math.PI * 2);
+                const zDepth = Math.sin(currentAngle) * this.cylinderRadius;
+
+                symbolsWithDepth.push({ symbol, y, zDepth });
+            }
+
+            // Sort by depth (furthest first)
+            symbolsWithDepth.sort((a, b) => a.zDepth - b.zDepth);
+
+            // Draw symbols in depth order
+            for (const item of symbolsWithDepth) {
+                const px = x * this.colWidth;
+                const py = (item.y * this.rowHeight) - this.rowHeight;
+
+                this.drawCylinder3D(item.symbol, px, py, x, item.y);
+            }
+
+            // Divider Lines between reels
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            this.ctx.beginPath();
+            this.ctx.moveTo(x * this.colWidth, 0);
+            this.ctx.lineTo(x * this.colWidth, this.canvas.height);
+            this.ctx.stroke();
+        }
+
+        // Draw win lines and particles on top
+        this.drawWinLinesAndEffects();
+    }
+
+    draw2DReels() {
+        // Original flat 2D rendering (fallback)
         for(let x=0; x<5; x++) {
             for(let y=0; y<5; y++) {
                 if(this.reelData[x][y]) {
@@ -655,13 +796,148 @@ class SlotMachine {
                     const px = x * this.colWidth;
                     const py = (y * this.rowHeight) + this.reelOffsets[x] - this.rowHeight;
                     const isWin = this.winningCells.has(`${x},${y-1}`);
-                    this.drawText(s, px, py, isWin);
+
+                    this.drawCard(s, px, py, isWin);
+                }
+            }
+            // Divider Lines
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            this.ctx.beginPath();
+            this.ctx.moveTo(x*this.colWidth,0);
+            this.ctx.lineTo(x*this.colWidth,850);
+            this.ctx.stroke();
+        }
+
+        // Draw win lines and particles on top
+        this.drawWinLinesAndEffects();
+    }
+
+    drawCylinder3D(symbol, x, y, reelIndex, symbolIndex) {
+        const rotationAngle = this.reelRotations[reelIndex];
+        const symbolsPerReel = this.reelData[reelIndex].length;
+        const anglePerSymbol = (Math.PI * 2) / symbolsPerReel;
+
+        // Calculate this symbol's angle based on its position
+        const baseAngle = symbolIndex * anglePerSymbol;
+        const currentAngle = (rotationAngle + baseAngle) % (Math.PI * 2);
+
+        // Depth calculation (how far back the symbol is)
+        const zDepth = Math.sin(currentAngle) * this.cylinderRadius;
+        const yOffset = Math.cos(currentAngle) * this.cylinderRadius;
+
+        // Skip if symbol is on back of cylinder
+        if (Math.cos(currentAngle) < -0.2) return;
+
+        // Perspective scaling
+        const perspectiveFactor = 0.5;
+        const scale = 1 - (zDepth / this.cylinderRadius) * perspectiveFactor;
+
+        // Calculate lighting (directional light from top-left)
+        const lightAngle = Math.PI * 0.75; // 135 degrees
+        const lightIntensity = Math.max(0.3, Math.cos(currentAngle - lightAngle) * 0.5 + 0.5);
+
+        // Draw the cylinder segment
+        this.drawCylinderSegment(
+            x,
+            y + yOffset,
+            scale,
+            symbol,
+            lightIntensity,
+            currentAngle
+        );
+    }
+
+    drawWinLinesAndEffects() {
+        // Win Lines (On Top) - Enhanced Animations with Left-to-Right Progress
+        if(!this.isSpinning && this.winningLines.length > 0) {
+            // Use simplified rendering on mobile for better performance
+            if (this.isMobile) {
+                this.drawWinLinesMobile();
+            } else {
+                this.drawWinLinesDesktop();
+            }
+        }
+
+        // Symbol Text (only for 2D mode, 3D draws symbols directly)
+        if (!this.enable3D) {
+            for(let x=0; x<5; x++) {
+                for(let y=0; y<5; y++) {
+                    if(this.reelData[x][y]) {
+                        const s = this.reelData[x][y];
+                        const px = x * this.colWidth;
+                        const py = (y * this.rowHeight) + this.reelOffsets[x] - this.rowHeight;
+                        const isWin = this.winningCells.has(`${x},${y-1}`);
+                        this.drawText(s, px, py, isWin);
+                    }
                 }
             }
         }
 
-        // 4. Particles
+        // Particles
         this.particles.forEach(p => p.draw(this.ctx));
+    }
+
+    drawCylinderSegment(x, y, scale, symbol, lightIntensity, angle) {
+        const p = 4;
+        const w = this.colWidth - p * 2;
+        const h = (this.rowHeight - p * 2) * scale;
+        const centerY = y + (this.rowHeight / 2);
+        const scaledY = centerY - (h / 2);
+
+        // Safety check for invalid values
+        if (!isFinite(scaledY) || !isFinite(h) || h <= 0) {
+            return;
+        }
+
+        // Metallic gradient background
+        const gradient = this.ctx.createLinearGradient(x + p, scaledY, x + p + w, scaledY + h);
+
+        // Base color influenced by light
+        const baseGray = Math.floor(80 + lightIntensity * 120);
+        gradient.addColorStop(0, `rgb(${baseGray + 40}, ${baseGray + 40}, ${baseGray + 40})`);
+        gradient.addColorStop(0.5, `rgb(${baseGray}, ${baseGray}, ${baseGray})`);
+        gradient.addColorStop(1, `rgb(${baseGray - 40}, ${baseGray - 40}, ${baseGray - 40})`);
+
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(x + p, scaledY, w, h);
+
+        // Add metallic edge highlight
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${lightIntensity * 0.3})`;
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(x + p, scaledY, w, h);
+
+        // Draw symbol with lighting
+        this.drawSymbolOnCylinder(symbol, x, centerY, scale, lightIntensity);
+    }
+
+    drawSymbolOnCylinder(symbol, x, centerY, scale, lightIntensity) {
+        const cx = x + this.colWidth / 2;
+
+        this.ctx.save();
+        this.ctx.translate(cx, centerY);
+        this.ctx.scale(scale, scale);
+
+        // Symbol brightness based on lighting
+        this.ctx.globalAlpha = lightIntensity;
+        this.ctx.font = '50px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillStyle = '#fff';
+
+        // Add glow for special symbols
+        if (this.enableShadows && (symbol.isWild || symbol.isScatter)) {
+            this.ctx.shadowBlur = 15 * lightIntensity;
+            this.ctx.shadowColor = symbol.isWild ? '#ff69b4' : '#ffd700';
+        }
+
+        this.ctx.fillText(symbol.name, 0, 0);
+
+        if (this.enableShadows) {
+            this.ctx.shadowBlur = 0;
+        }
+
+        this.ctx.restore();
+        this.ctx.globalAlpha = 1.0;
     }
 
     // Simplified win line rendering for mobile (2 layers, no shadows)
@@ -1027,6 +1303,7 @@ class SlotMachine {
     updateDebugOverlay() {
         if (!this.debugEnabled) return;
         const mode = document.getElementById('debugMode');
+        const render3D = document.getElementById('debug3D');
         const fps = document.getElementById('debugFPS');
         const target = document.getElementById('debugTargetFPS');
         const shadows = document.getElementById('debugShadows');
@@ -1035,6 +1312,7 @@ class SlotMachine {
         const spinning = document.getElementById('debugSpinning');
 
         if (mode) mode.textContent = this.isMobile ? 'Mobile' : 'Desktop';
+        if (render3D) render3D.textContent = this.enable3D ? '3D' : '2D';
         if (fps) fps.textContent = this.currentFPS;
         if (target) target.textContent = this.targetFPS;
         if (shadows) shadows.textContent = this.enableShadows ? 'ON' : 'OFF';
