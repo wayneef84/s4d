@@ -582,20 +582,21 @@
         // Actions
         var actionsCell = document.createElement('td');
         actionsCell.className = 'actions-column';
-        var viewBtn = document.createElement('button');
-        viewBtn.textContent = 'View';
-        viewBtn.className = 'btn-secondary';
-        viewBtn.style.padding = '0.4rem 0.8rem';
-        viewBtn.style.fontSize = '0.85rem';
-        viewBtn.onclick = function() {
+        var detailsBtn = document.createElement('button');
+        detailsBtn.innerHTML = '<span class="btn-icon">📋</span><span class="btn-text">Details</span>';
+        detailsBtn.className = 'btn-secondary btn-details';
+        detailsBtn.onclick = function(e) {
+            e.stopPropagation(); // Prevent row click
             self.showDetail(tracking.awb);
         };
-        actionsCell.appendChild(viewBtn);
+        actionsCell.appendChild(detailsBtn);
         row.appendChild(actionsCell);
 
-        // Click row to view details
+        // Row click: only switch detail if panel already open
         row.onclick = function(e) {
-            if (e.target.tagName !== 'BUTTON') {
+            // Don't open detail on row click - only via button
+            // But if detail is already open, switch to this row
+            if (!document.getElementById('detailPanel').classList.contains('hidden')) {
                 self.showDetail(tracking.awb);
             }
         };
@@ -1475,6 +1476,32 @@
                     detailPanel.classList.add('hidden');
                 }
             }
+        });
+
+        // Click outside to close detail panel (desktop only)
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth < 1024) return; // Only on desktop
+
+            var detailPanel = document.getElementById('detailPanel');
+            var tableContainer = document.querySelector('.table-container');
+
+            // Check if detail panel is open
+            if (detailPanel.classList.contains('hidden')) return;
+
+            // Check if click is inside detail panel
+            if (detailPanel.contains(e.target)) return;
+
+            // Check if click is on a table row (switch detail)
+            if (tableContainer && tableContainer.contains(e.target)) {
+                var row = e.target.closest('tr');
+                if (row && row.parentElement.tagName === 'TBODY') {
+                    // Row click handled by row onclick
+                    return;
+                }
+            }
+
+            // Click outside - close detail
+            self.closeDetail();
         });
     };
 
