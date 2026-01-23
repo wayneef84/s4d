@@ -841,6 +841,47 @@ textarea,
 .mb-1 { margin-bottom: 0.5rem; }
 .mb-2 { margin-bottom: 1rem; }
 
+/* Payload Viewer */
+.payload-viewer {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    max-height: 400px;
+    overflow: auto;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.payload-viewer pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.json-key {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.json-string {
+    color: var(--success-color);
+}
+
+.json-number {
+    color: var(--info-color);
+}
+
+.json-boolean {
+    color: var(--warning-color);
+}
+
+.json-null {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
 /* Status Badges */
 .status-badge {
     display: inline-block;

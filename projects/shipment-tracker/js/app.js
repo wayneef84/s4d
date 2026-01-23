@@ -412,6 +412,9 @@
             // Render events
             this.renderEvents(tracking.events);
 
+            // Render payload
+            this.renderPayload(tracking.rawPayload || tracking);
+
             // Setup delete button
             var self = this;
             document.getElementById('deleteTrackingBtn').onclick = function() {
@@ -420,7 +423,12 @@
 
             // Setup force refresh button
             document.getElementById('forceRefreshBtn').onclick = function() {
-                self.showToast('Force refresh not yet implemented', 'info');
+                self.forceRefreshTracking(awb);
+            };
+
+            // Setup download payload button
+            document.getElementById('downloadPayloadBtn').onclick = function() {
+                self.downloadPayload(tracking);
             };
 
             // Show panel
@@ -442,11 +450,92 @@
         container.appendChild(dd);
     };
 
+    ShipmentTrackerApp.prototype.renderPayload = function(payload) {
+        var viewer = document.getElementById('payloadViewer');
+        viewer.innerHTML = '';
+
+        if (!payload) {
+            viewer.textContent = 'No payload data available';
+            return;
+        }
+
+        // Create syntax-highlighted JSON
+        var pre = document.createElement('pre');
+        pre.innerHTML = this.syntaxHighlightJSON(payload);
+        viewer.appendChild(pre);
+    };
+
+    ShipmentTrackerApp.prototype.syntaxHighlightJSON = function(obj) {
+        var json = JSON.stringify(obj, null, 2);
+
+        // Simple syntax highlighting
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        json = json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            var cls = 'json-number';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'json-key';
+                } else {
+                    cls = 'json-string';
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'json-boolean';
+            } else if (/null/.test(match)) {
+                cls = 'json-null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+        });
+
+        return json;
+    };
+
+    ShipmentTrackerApp.prototype.downloadPayload = function(tracking) {
+        var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        var filename = 'payload_' + tracking.awb + '_' + timestamp + '.json';
+
+        var payload = tracking.rawPayload || tracking;
+        var jsonStr = JSON.stringify(payload, null, 2);
+
+        this.downloadFile(jsonStr, filename, 'application/json');
+        this.showToast('Downloaded payload for ' + tracking.awb, 'success');
+    };
+
+    ShipmentTrackerApp.prototype.forceRefreshTracking = async function(awb) {
+        console.log('[App] Force refreshing:', awb);
+
+        // Check if force refresh is enabled in settings
+        if (!this.settings.queryEngine.enableForceRefresh) {
+            this.showToast('⚠️ Force refresh is disabled. Enable in Settings first.', 'warning');
+            return;
+        }
+
+        try {
+            var tracking = await this.db.getTracking(awb);
+            if (!tracking) {
+                throw new Error('Tracking not found');
+            }
+
+            // TODO: Implement actual API refresh
+            // For now, just show a message
+            this.showToast('🔄 Force refresh coming soon! (Query engine needed)', 'info');
+
+            // Future implementation:
+            // 1. Call DHLAdapter.trackShipment(awb) with force flag
+            // 2. Update IndexedDB with new data
+            // 3. Refresh detail panel
+            // 4. Show success message
+
+        } catch (err) {
+            console.error('[App] Force refresh failed:', err);
+            this.showToast('Force refresh failed: ' + err.message, 'error');
+        }
+    };
+
     ShipmentTrackerApp.prototype.renderEvents = function(events) {
         var timeline = document.getElementById('detailEvents');
         timeline.innerHTML = '';
 
-        if (events.length === 0) {
+        if (!events || events.length === 0) {
             timeline.textContent = 'No events yet';
             return;
         }

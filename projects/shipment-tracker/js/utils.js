@@ -31,6 +31,11 @@
             return 'Invalid Date';
         }
 
+        // Check for Unix epoch (1970-01-01 or earlier) - indicates unset/new tracking
+        if (date.getTime() <= 0) {
+            return 'Not yet checked';
+        }
+
         switch (format) {
             case 'short':
                 // Jan 23, 2026
