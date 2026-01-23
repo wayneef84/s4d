@@ -4,7 +4,44 @@
 
 ---
 
-## 🚀 Priority 1: Core Functionality (v1.1)
+## 🔥 PRIORITY 0: Critical Mobile UX Fixes (IMMEDIATE)
+
+### Mobile Table Redesign (Critical)
+- [ ] **Replace table with card-based layout on mobile**
+  - Each shipment = horizontal panel/card
+  - Status icon on left (visual indicator: ✅ delivered, 🚚 in transit, ⚠️ exception, etc.)
+  - AWB truncated: `1...23456` (show first + last digits)
+  - Tap to expand for full details
+  - Full AWB shown when expanded
+
+- [ ] **Duplicate AWB Detection**
+  - If truncated AWBs look identical, show indicator (e.g., badge "2x")
+  - Link to jump between duplicate AWBs
+  - Visual differentiation (different colors/borders)
+
+- [ ] **Desktop: Keep table, improve detail panel**
+  - Show detail panel side-by-side with table (split view)
+  - Table on left (60%), details on right (40%)
+  - Resize breakpoint: > 1024px = split view, < 1024px = full overlay
+
+### Stats Dashboard Contrast Fix (Critical)
+- [ ] **Improve text/background contrast on stats cards**
+  - Ensure WCAG AA compliance (4.5:1 contrast ratio)
+  - Test with various color schemes
+  - Add border/shadow for better separation
+  - Consider solid backgrounds instead of gradients
+
+### Filter Bar Mobile Layout (Critical)
+- [ ] **Fix search criteria alignment on mobile**
+  - Stack filters vertically on small screens
+  - Make dropdowns full-width
+  - Increase touch target size (min 44x44px)
+  - Add clear visual separation between filter groups
+  - Consider collapsible filter section to save space
+
+---
+
+## 🚀 PRIORITY 1: Core Functionality (v1.1)
 
 ### Carrier Integration - Additional Carriers
 - [ ] **OnTrac** - Amazon's preferred carrier
@@ -55,50 +92,72 @@
 
 ---
 
-## 🎨 Priority 2: UX Improvements (v1.2)
+## 🎨 PRIORITY 2: Responsive Design System (v1.2)
 
-### UI Enhancements
+### Mobile-First Card System
+- [ ] Create `ShipmentCard` component
+  - Compact horizontal layout
+  - Status icon (colored, animated)
+  - AWB truncation logic: `formatAWB(awb)` → `"1...23456"`
+  - Expand/collapse animation
+  - Swipe gestures (swipe left = delete, swipe right = refresh)
+
+### Desktop Split View
+- [ ] Implement responsive layout breakpoints
+  - Mobile: < 768px (cards only)
+  - Tablet: 768px - 1024px (table with overlay detail)
+  - Desktop: > 1024px (split view: table + detail panel)
+- [ ] Add resize handle between table and detail panel
+- [ ] Persist layout preference in localStorage
+
+### Status Icons & Visual Indicators
+- [ ] Design status icon system
+  - ✅ Delivered (green)
+  - 🚚 In Transit (blue, animated)
+  - 📦 Pickup (orange)
+  - 🏠 Out for Delivery (purple, animated)
+  - ⚠️ Exception (red, pulsing)
+  - ❌ Failed (dark red)
 - [ ] Add loading spinner for API calls
-- [ ] Show progress indicator when adding multiple trackings
-- [ ] Add skeleton loaders for table rows
-- [ ] Implement toast stacking (multiple toasts)
-- [ ] Add carrier logos/icons instead of text
-- [ ] Dark mode toggle (currently auto-detected)
+- [ ] Add skeleton loaders for cards/rows
 
-### Detail Panel
-- [ ] Add "Refresh" button per shipment
-- [ ] Show API rate limit status
-- [ ] Display estimated delivery time countdown
-- [ ] Add map view for tracking locations (Google Maps API)
-- [ ] Show package weight/dimensions if available
+### Accessibility & Contrast
+- [ ] Run WCAG AA contrast checker on all components
+- [ ] Ensure 4.5:1 contrast ratio for text
+- [ ] Ensure 3:1 contrast ratio for UI components
+- [ ] Add focus indicators for keyboard navigation
+- [ ] Test with screen readers
 
-### Table Features
+---
+
+## 📊 PRIORITY 3: UX Enhancements (v1.3)
+
+### Table Features (Desktop)
 - [ ] Sortable columns (click header to sort)
 - [ ] Column visibility toggle (show/hide columns)
 - [ ] Bulk actions (select multiple, delete/export)
 - [ ] Inline editing for notes/labels
 - [ ] Add custom labels/tags to shipments
+- [ ] Virtual scrolling for large datasets (1000+ rows)
+
+### Detail Panel Improvements
+- [ ] Add "Refresh" button per shipment
+- [ ] Show API rate limit status
+- [ ] Display estimated delivery time countdown
+- [ ] Add map view for tracking locations (Google Maps API)
+- [ ] Show package weight/dimensions if available
+- [ ] Add notes/comments section per shipment
+
+### Search & Filters
+- [ ] Smart search (search by AWB, origin, destination, carrier)
+- [ ] Autocomplete suggestions
+- [ ] Saved filter presets
+- [ ] Quick filters (delivered today, in transit, exceptions)
+- [ ] Date range picker for filtering
 
 ---
 
-## 📊 Priority 3: Analytics & Insights (v1.3)
-
-### Dashboard
-- [ ] Delivery time analytics (average by carrier)
-- [ ] On-time delivery percentage
-- [ ] Carrier performance comparison
-- [ ] Monthly/yearly shipment trends
-- [ ] Cost tracking (if user enters shipping costs)
-- [ ] Charts using Chart.js or similar
-
-### Reports
-- [ ] Generate PDF reports
-- [ ] Weekly/monthly email summaries
-- [ ] Export analytics to CSV/Excel
-
----
-
-## 🔔 Priority 4: Notifications (v1.4)
+## 🔔 PRIORITY 4: Notifications & Alerts (v1.4)
 
 ### Push Notifications
 - [ ] Request notification permission
@@ -121,7 +180,24 @@
 
 ---
 
-## ☁️ Priority 5: Cloud Sync (v2.0)
+## 📈 PRIORITY 5: Analytics & Insights (v1.5)
+
+### Dashboard
+- [ ] Delivery time analytics (average by carrier)
+- [ ] On-time delivery percentage
+- [ ] Carrier performance comparison
+- [ ] Monthly/yearly shipment trends
+- [ ] Cost tracking (if user enters shipping costs)
+- [ ] Charts using Chart.js or similar
+
+### Reports
+- [ ] Generate PDF reports
+- [ ] Weekly/monthly email summaries
+- [ ] Export analytics to CSV/Excel
+
+---
+
+## ☁️ PRIORITY 6: Cloud Sync (v2.0)
 
 ### Firebase/Supabase Integration
 - [ ] User authentication (Google, email/password)
@@ -140,7 +216,7 @@
 
 ---
 
-## 🔧 Priority 6: Developer Experience
+## 🔧 PRIORITY 7: Developer Experience
 
 ### Code Quality
 - [ ] Add JSDoc comments to all functions
@@ -165,7 +241,7 @@
 
 ---
 
-## 📦 Priority 7: Import/Export Features
+## 📦 PRIORITY 8: Import/Export Features
 
 ### Import
 - [ ] CSV import with column mapping
@@ -183,7 +259,7 @@
 
 ---
 
-## 🎯 Priority 8: Advanced Features (v2.1+)
+## 🎯 PRIORITY 9: Advanced Features (v2.1+)
 
 ### Smart Features
 - [ ] AI-powered delivery time prediction
@@ -213,12 +289,17 @@
 - [x] ~~Force refresh button not working~~ (Fixed: 130c53d)
 - [x] ~~Missing JSON payload viewer~~ (Fixed: 63bedad)
 - [x] ~~No way to clear all data~~ (Fixed: 0dcbbbe)
+- [ ] **Table is garbage on mobile** (Priority 0)
+- [ ] **Stats dashboard has poor contrast** (Priority 0)
+- [ ] **Filter bar layout broken on mobile** (Priority 0)
+- [ ] **Detail panel should be split view on desktop** (Priority 0)
 
 ### Medium Priority
 - [ ] Table doesn't show loading state during API calls
 - [ ] No validation for duplicate AWB entries
 - [ ] Settings panel doesn't scroll on mobile
 - [ ] Toast notifications can overlap
+- [ ] No indication when AWBs are truncated and identical
 
 ### Low Priority
 - [ ] Export panel could use better styling
@@ -279,10 +360,12 @@
 - [ ] Test all carriers with real tracking numbers
 - [ ] Test offline functionality
 - [ ] Test on Safari (ES5 compatibility)
-- [ ] Test on mobile browsers
+- [ ] Test on mobile browsers (iOS Safari, Chrome Android)
 - [ ] Test with large datasets (1000+ trackings)
 - [ ] Load testing (concurrent API calls)
 - [ ] Accessibility testing (WCAG AA)
+- [ ] Contrast testing (all components)
+- [ ] Touch target testing (44x44px minimum)
 
 ---
 
@@ -294,6 +377,8 @@
 - [ ] Image optimization for carrier logos
 - [ ] Code splitting for large features
 - [ ] IndexedDB query optimization
+- [ ] Debounce search input
+- [ ] Throttle scroll events
 
 ---
 
@@ -323,35 +408,96 @@
 
 ## 🚦 Release Plan
 
-### v1.1 (Next Release)
+### v1.1 (Next Release - Critical UX)
+**Focus: Mobile Experience Overhaul**
+- Mobile card-based layout (replace table)
+- AWB truncation with duplicate detection
+- Stats dashboard contrast fixes
+- Filter bar mobile layout fixes
+- Desktop split view (table + detail panel)
+- Status icons system
+- Loading states and skeleton loaders
+
+### v1.2 (Carrier Expansion)
 - Additional carriers (OnTrac, LaserShip, Amazon Logistics)
 - Query engine implementation
 - Force refresh implementation
+- Rate limiting per carrier
 
-### v1.2 (UX Release)
-- UI enhancements
-- Loading states
-- Carrier logos
+### v1.3 (UX Polish)
 - Sortable tables
+- Bulk actions
+- Smart search
+- Saved filter presets
+- Map view for tracking
 
-### v1.3 (Analytics Release)
-- Dashboard with charts
-- Performance metrics
-- Reports
-
-### v1.4 (Notifications Release)
+### v1.4 (Notifications)
 - Push notifications
 - Email notifications
 - Webhooks
 
-### v2.0 (Cloud Release)
+### v1.5 (Analytics)
+- Dashboard with charts
+- Performance metrics
+- Reports
+
+### v2.0 (Cloud Sync)
 - Firebase/Supabase integration
 - Multi-device sync
 - User accounts
+- Shared tracking lists
+
+---
+
+## 📝 Design Mockups Needed
+
+### Mobile Card Layout
+```
+┌─────────────────────────────────────┐
+│ 🚚 DHL   1...23456       ⌄          │  ← Collapsed
+├─────────────────────────────────────┤
+│ 🚚 DHL   1234567890      ⌃          │  ← Expanded
+│ Status: In Transit                  │
+│ Origin: Hong Kong → Dest: NYC       │
+│ Est. Delivery: Jan 25, 2026         │
+│ [Refresh] [Details] [Delete]        │
+└─────────────────────────────────────┘
+```
+
+### Desktop Split View
+```
+┌──────────────────────────────────────────────────────┐
+│  Table (60%)           │  Detail Panel (40%)         │
+│ ┌──────────────────┐   │ ┌──────────────────────┐   │
+│ │ AWB | Carrier    │   │ │ Shipment Details     │   │
+│ │ 123 | DHL        │   │ │ ─────────────────── │   │
+│ │ 456 | FedEx  ◄─────────│ AWB: 1234567890     │   │
+│ │ 789 | UPS        │   │ │ Carrier: DHL        │   │
+│ └──────────────────┘   │ │ Status: In Transit   │   │
+│                        │ │ [Map] [Refresh]      │   │
+│                        │ └──────────────────────┘   │
+└──────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎨 Color System for Status Icons
+
+```javascript
+const STATUS_COLORS = {
+    DELIVERED: '#10b981',        // Green
+    IN_TRANSIT: '#3b82f6',       // Blue
+    OUT_FOR_DELIVERY: '#8b5cf6', // Purple
+    PICKUP: '#f59e0b',           // Orange
+    EXCEPTION: '#ef4444',        // Red
+    FAILED: '#991b1b'            // Dark Red
+};
+```
 
 ---
 
 *This TODO list is a living document and will be updated as features are completed or priorities change.*
 
 **Current Version:** v1.0.0
+**Next Version:** v1.1.0 (Mobile UX Overhaul)
 **Contributors:** Wayne Fong (wayneef84), Claude Sonnet 4.5
