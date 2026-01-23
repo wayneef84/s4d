@@ -87,7 +87,20 @@
 
             <div class="settings-section">
                 <h3>Data Management</h3>
-                <p class="help-text">⚠️ Warning: Clearing all data will permanently delete all tracking records and settings.</p>
+
+                <label for="pruneAfterDays">
+                    <span>Auto-prune shipments older than (days):</span>
+                    <input type="number" id="pruneAfterDays" min="30" max="365" value="90">
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" id="autoPruneEnabled">
+                    <span>Enable automatic pruning on app load</span>
+                </label>
+
+                <button id="pruneNowBtn" class="btn-secondary" style="margin-top: 0.5rem;">Prune Old Shipments Now</button>
+
+                <p class="help-text" style="margin-top: 1rem;">⚠️ Warning: Clearing all data will permanently delete all tracking records and settings.</p>
                 <button id="clearAllDataBtn" class="btn-danger">Clear All Data</button>
             </div>
 

@@ -526,13 +526,9 @@ textarea,
 }
 
 .stat-card.active {
-    border-color: var(--primary-color);
-    background: var(--primary-color);
-}
-
-.stat-card.active .stat-value,
-.stat-card.active .stat-label {
-    color: white;
+    border-color: #1e40af; /* Primary blue border */
+    box-shadow: 0 4px 16px rgba(30, 64, 175, 0.3); /* Fancy blue glow */
+    transform: translateY(-1px);
 }
 
 .stat-value {

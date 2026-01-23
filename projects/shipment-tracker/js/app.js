@@ -40,6 +40,10 @@
                 cooldownMinutes: 10,
                 skipDelivered: true,
                 enableForceRefresh: false
+            },
+            dataManagement: {
+                pruneAfterDays: 90,
+                autoPruneEnabled: false
             }
         };
 
@@ -79,6 +83,11 @@
 
             // Set initial active stat card
             this.setActiveStatCard();
+
+            // Auto-prune if enabled
+            if (this.settings.dataManagement.autoPruneEnabled) {
+                await this.pruneOldShipments(true);
+            }
 
             // Show success message
             this.showToast('Shipment Tracker loaded successfully', 'success');
@@ -161,6 +170,13 @@
                 this.populateQueryEngineFields();
             }
 
+            // Load data management config
+            var dataManagement = await this.db.getSetting('dataManagement');
+            if (dataManagement) {
+                this.settings.dataManagement = dataManagement;
+                this.populateDataManagementFields();
+            }
+
         } catch (err) {
             console.error('[App] Failed to load settings:', err);
         }
@@ -181,9 +197,13 @@
             this.settings.queryEngine.skipDelivered = document.getElementById('skipDelivered').checked;
             this.settings.queryEngine.enableForceRefresh = document.getElementById('enableForceRefresh').checked;
 
+            this.settings.dataManagement.pruneAfterDays = parseInt(document.getElementById('pruneAfterDays').value);
+            this.settings.dataManagement.autoPruneEnabled = document.getElementById('autoPruneEnabled').checked;
+
             // Save to database
             await this.db.saveSetting('apiKeys', this.settings.apiKeys);
             await this.db.saveSetting('queryEngine', this.settings.queryEngine);
+            await this.db.saveSetting('dataManagement', this.settings.dataManagement);
 
             this.showToast('Settings saved successfully', 'success');
             this.closeSettings();
@@ -206,6 +226,11 @@
         document.getElementById('cooldownMinutes').value = this.settings.queryEngine.cooldownMinutes;
         document.getElementById('skipDelivered').checked = this.settings.queryEngine.skipDelivered;
         document.getElementById('enableForceRefresh').checked = this.settings.queryEngine.enableForceRefresh;
+    };
+
+    ShipmentTrackerApp.prototype.populateDataManagementFields = function() {
+        document.getElementById('pruneAfterDays').value = this.settings.dataManagement.pruneAfterDays;
+        document.getElementById('autoPruneEnabled').checked = this.settings.dataManagement.autoPruneEnabled;
     };
 
     // ============================================================
@@ -301,6 +326,75 @@
         } catch (err) {
             console.error('[App] Failed to delete tracking:', err);
             this.showToast('Failed to delete: ' + err.message, 'error');
+        }
+    };
+
+    ShipmentTrackerApp.prototype.pruneOldShipments = async function(autoMode) {
+        console.log('[App] Pruning old shipments...');
+
+        try {
+            var cutoffDays = this.settings.dataManagement.pruneAfterDays;
+            var cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - cutoffDays);
+
+            // Find shipments older than cutoff
+            var toPrune = this.trackings.filter(function(t) {
+                var lastUpdate = new Date(t.lastUpdated);
+                return lastUpdate < cutoffDate;
+            });
+
+            if (toPrune.length === 0) {
+                if (!autoMode) {
+                    this.showToast('No shipments older than ' + cutoffDays + ' days', 'info');
+                }
+                return;
+            }
+
+            // In auto mode, prune silently. In manual mode, ask for confirmation
+            if (!autoMode) {
+                var confirmed = confirm(
+                    'Prune ' + toPrune.length + ' shipment(s) older than ' + cutoffDays + ' days?\n\n' +
+                    'They will be exported to a JSON file before deletion.'
+                );
+                if (!confirmed) {
+                    this.showToast('Pruning cancelled', 'info');
+                    return;
+                }
+            }
+
+            // Export pruned data for archival
+            var exportData = {
+                exportDate: new Date().toISOString(),
+                cutoffDate: cutoffDate.toISOString(),
+                pruneAfterDays: cutoffDays,
+                count: toPrune.length,
+                shipments: toPrune
+            };
+
+            var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'pruned-shipments-' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Delete pruned shipments from database
+            for (var i = 0; i < toPrune.length; i++) {
+                await this.db.deleteTracking(toPrune[i].awb);
+            }
+
+            // Reload data
+            await this.loadTrackings();
+            this.updateStats();
+
+            this.showToast('Pruned ' + toPrune.length + ' old shipment(s)', 'success');
+
+        } catch (err) {
+            console.error('[App] Pruning failed:', err);
+            this.showToast('Pruning failed: ' + err.message, 'error');
         }
     };
 
@@ -1132,6 +1226,10 @@
 
         document.getElementById('closeSettingsBtn').onclick = function() {
             self.closeSettings();
+        };
+
+        document.getElementById('pruneNowBtn').onclick = function() {
+            self.pruneOldShipments(false);
         };
 
         document.getElementById('clearAllDataBtn').onclick = function() {
