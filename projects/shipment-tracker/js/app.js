@@ -581,6 +581,7 @@
 
         // Actions
         var actionsCell = document.createElement('td');
+        actionsCell.className = 'actions-column';
         var viewBtn = document.createElement('button');
         viewBtn.textContent = 'View';
         viewBtn.className = 'btn-secondary';
@@ -888,6 +889,11 @@
             // Show panel
             document.getElementById('detailPanel').classList.remove('hidden');
 
+            // Add class to body to hide actions column on desktop
+            if (window.innerWidth >= 1024) {
+                document.body.classList.add('detail-open');
+            }
+
             // Setup back to top button
             this.setupBackToTop();
 
@@ -1087,6 +1093,9 @@
     };
 
     ShipmentTrackerApp.prototype.closeDetail = function() {
+        // Remove detail-open class from body
+        document.body.classList.remove('detail-open');
+
         // On desktop (1024px+), keep panel open but show empty state
         // On mobile/tablet, hide panel completely
         if (window.innerWidth >= 1024) {

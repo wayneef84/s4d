@@ -1295,4 +1295,9 @@ textarea,
     .detail-panel.hidden {
         display: none;
     }
+
+    /* Hide actions column when detail panel is visible */
+    body.detail-open .actions-column {
+        display: none;
+    }
 }
