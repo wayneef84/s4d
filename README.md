@@ -1,59 +1,222 @@
-# 🎰 Dad's Slots (V1.0 Gold Master)
+# Fong Family Arcade & Projects
 
-**Dad's Slots** is a lightweight, browser-based slot machine game featuring 20 unique themes, particle effects, and a "Dad Mode" physics engine designed for fun, frequent wins.
+**A collection of browser-based games and utility applications.**
 
-## 🎮 How to Play (Rules)
-
-### 1. The Objective
-Spin the reels to match **3 or more symbols** on an active payline.
-* **3 Matches:** Standard Payout.
-* **4 Matches:** 3x Multiplier.
-* **5 Matches:** 5x Multiplier.
-
-### 2. Special Symbols
-* **🃏 Wilds:** Substitute for any symbol except Scatters to create a winning line.
-* **🌟 Scatters:** These pay in **any position** (they do not need to be on a line). 3 or more Scatters usually trigger a big payout (Free Spins logic reserved for v1.1).
-
-### 3. Controls
-* **BET:** Increase or decrease your wager per spin (Min: $0.20, Max: $5.00).
-* **LINES:** Choose how many paylines are active (1-20).
-* **SPIN:** Starts the game.
-* **QUICK STOP:** Press the **STOP** button while reels are spinning to instantly finish the round.
-* **RESET:** If you run out of money, hit the Reset button in the top bar to restore your $100 balance.
-
-### 4. Themes
-Select from **20 different themes** using the dropdown menu at the top, including:
-* 🦄 Mystical Unicorn
-* 🚀 Space Explorer
-* 🦁 Wild Animals
-* 🍒 Vegas Classic
-* ...and 16 more!
+🎮 **Live Site:** [wayneef84.github.io](https://wayneef84.github.io/)
 
 ---
 
-## 🛠️ Installation & Setup
+## 🎮 Games
 
-1.  **Download** the 4 core files:
-    * `index.html`
-    * `styles.css`
-    * `script.js`
-    * `themes.js`
-2.  **Place them** in the same folder.
-3.  **Double-click** `index.html` to play in your web browser.
-    * *No server or installation required.*
+### Letter Tracing (v5.1)
+Educational app with A-B-C audio architecture, voice speed control, and rigorous stroke validation.
+
+**Features:**
+- Interactive letter tracing
+- Voice-guided learning
+- Adjustable playback speed
+- Progress tracking
+
+### Slots Game (v3.0)
+A 5-reel, 4-row slot machine with 20 themes, bonus features, and Dad Mode physics.
+
+**Features:**
+- 20 unique themes
+- Particle effects
+- Quick stop functionality
+- Progressive difficulty
+
+### Sprunki Mixer
+Web-based music mixer with drag-and-drop character system.
+
+**Features:**
+- Interactive sound mixing
+- Character-based composition
+- Real-time audio playback
+
+### Xiangqi (v0.3.1)
+Fully playable Chinese Chess with AI opponent.
+
+**Features:**
+- Traditional Chinese Chess rules
+- AI opponent
+- Move validation
+- Game state management
+
+### Card Games (In Progress)
+Blackjack, War, Euchre, Big 2 — built on shared Card Engine.
+
+**Features:**
+- Shared card engine
+- Multiple game types
+- Mobile-optimized UI
 
 ---
 
-## 📂 File Structure
+## 🛠️ Projects
 
-* **`index.html`**: The game interface and DOM structure. Contains the canvas and the overlay system for glow effects.
-* **`styles.css`**: Handles the layout, animations (pulsing, flashing), and responsiveness.
-* **`script.js`**: The Core Engine. Handles RNG logic, Canvas drawing (Z-Layering), Win Calculations, and Particle Physics.
-* **`themes.js`**: The Database. Contains the configuration for all 20 themes (colors, symbols, weights).
+### Shipment Tracker (v1.1.0)
+
+**Multi-carrier shipment tracking with offline-first architecture.**
+
+📦 **Live App:** [wayneef84.github.io/projects/shipment-tracker/](https://wayneef84.github.io/projects/shipment-tracker/)
+
+**Features:**
+- **Multi-carrier support:** DHL, FedEx, UPS, USPS (more coming)
+- **Mobile-first design:** Card-based layout with AWB truncation
+- **Offline-first:** IndexedDB storage, works without internet
+- **BYOK model:** Bring Your Own API Keys
+- **Smart tracking:** Auto-detect carrier, duplicate detection
+- **Export capabilities:** JSON, CSV, Excel
+- **Rate limiting:** Configurable cooldown, force refresh option
+- **JSON viewer:** View and download raw API payloads
+
+**Documentation:**
+- [Architecture Guide](projects/shipment-tracker/ARCHITECTURE.md) - Complete system design
+- [TODO Roadmap](projects/shipment-tracker/TODO.md) - Feature priorities
+- [Testing Guide](projects/shipment-tracker/TESTING.md) - How to test
+
+**Technology:**
+- Vanilla JavaScript (ES5)
+- IndexedDB for storage
+- Mobile-responsive (< 768px cards, ≥ 768px table)
+- Optional Cloudflare Worker proxy
+
+**Quick Start:**
+1. Open [Shipment Tracker](https://wayneef84.github.io/projects/shipment-tracker/)
+2. Go to Settings → API Keys
+3. Enter your carrier API keys
+4. Add tracking numbers
+5. View status updates
 
 ---
 
-## 📝 Credits
-* **Version:** 1.0 (Gold Master)
-* **Engine:** Canvas 2D / Vanilla JS
-* **License:** Open Source
+## 📂 Repository Structure
+
+```
+/
+├── games/
+│   ├── letter-tracing/
+│   ├── slots/
+│   ├── sprunki-mixer/
+│   ├── xiangqi/
+│   └── cards/
+│       ├── blackjack/
+│       ├── war/
+│       └── shared/          # Shared card engine
+│
+├── projects/
+│   └── shipment-tracker/
+│       ├── index.html
+│       ├── css/
+│       ├── js/
+│       │   ├── app.js
+│       │   ├── db.js
+│       │   ├── utils.js
+│       │   └── api/
+│       ├── proxy/           # Cloudflare Worker
+│       └── docs/
+│           ├── ARCHITECTURE.md
+│           ├── TODO.md
+│           └── TESTING.md
+│
+├── index.html               # Landing page
+├── CLAUDE.md               # AI agent instructions
+└── README.md               # This file
+```
+
+---
+
+## 🚀 Technology Stack
+
+**Frontend:**
+- Vanilla JavaScript (ES5 for broad compatibility)
+- HTML5 Canvas (games)
+- CSS3 with Flexbox
+- Mobile-first responsive design
+
+**Storage:**
+- IndexedDB (Shipment Tracker)
+- LocalStorage (game preferences)
+
+**APIs:**
+- DHL Express API
+- FedEx Track API
+- UPS Tracking API
+- USPS API
+
+**Deployment:**
+- GitHub Pages
+- Cloudflare Workers (optional proxy)
+
+---
+
+## 💻 Development
+
+### Prerequisites
+- Web server (Python, Node, or any HTTP server)
+- Modern browser (Chrome 90+, Firefox 88+, Safari 14+)
+
+### Local Setup
+
+```bash
+# Clone repository
+git clone https://github.com/wayneef84/wayneef84.github.io.git
+cd wayneef84.github.io
+
+# Start local server (Python 3)
+python3 -m http.server 8000
+
+# Open browser
+open http://localhost:8000
+```
+
+### Contributing
+
+1. Read `CLAUDE.md` for project guidelines
+2. For Shipment Tracker, read `projects/shipment-tracker/ARCHITECTURE.md`
+3. Check `TODO.md` for current priorities
+4. Follow ES5 JavaScript conventions
+5. Update documentation with code changes
+
+---
+
+## 📋 Project Status
+
+### Games
+- ✅ Letter Tracing - Complete
+- ✅ Slots Game - Complete
+- ✅ Sprunki Mixer - Complete
+- ✅ Xiangqi - Playable
+- 🚧 Card Games - In Progress
+
+### Projects
+- ✅ Shipment Tracker v1.1.0 - Mobile UX Complete
+- 🚧 Query Engine - In Progress
+- 📋 Desktop Split View - Planned
+- 📋 Additional Carriers - Planned
+
+---
+
+## 📄 License
+
+Open Source - See individual project directories for specific licenses.
+
+---
+
+## 👤 Author
+
+**Wayne Fong** (wayneef84)
+- GitHub: [@wayneef84](https://github.com/wayneef84)
+- Website: [wayneef84.github.io](https://wayneef84.github.io/)
+
+*Built with assistance from Claude Sonnet 4.5*
+
+---
+
+## 🔗 Quick Links
+
+- [Live Site](https://wayneef84.github.io/)
+- [Shipment Tracker](https://wayneef84.github.io/projects/shipment-tracker/)
+- [Shipment Tracker Docs](projects/shipment-tracker/ARCHITECTURE.md)
+- [Issue Tracker](https://github.com/wayneef84/wayneef84.github.io/issues)
