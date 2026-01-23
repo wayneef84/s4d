@@ -153,8 +153,6 @@
 
         <!-- Add Tracking Form -->
         <div class="add-tracking-section">
-            <h2>Add Tracking Number</h2>
-
             <form id="addTrackingForm" class="add-tracking-form">
                 <div class="form-row">
                     <input
@@ -174,42 +172,35 @@
                     </select>
 
                     <button type="submit" class="btn-primary">Add</button>
-                </div>
 
-                <div class="form-options">
-                    <label for="dateShipped">
-                        <span>Date Shipped (optional):</span>
-                        <input type="date" id="dateShipped">
-                    </label>
+                    <input type="date" id="dateShipped" placeholder="Date Shipped">
+
+                    <input type="file" id="importFile" accept=".json,.csv" style="display: none;">
+                    <button type="button" id="importBtn" class="btn-secondary btn-icon-expand" title="Import from File">
+                        <span class="icon">📥</span>
+                        <span class="text">Import</span>
+                    </button>
                 </div>
             </form>
-
-            <div class="bulk-import">
-                <input type="file" id="importFile" accept=".json,.csv" style="display: none;">
-                <button id="importBtn" class="btn-secondary btn-icon-expand" title="Import from File">
-                    <span class="icon">📥</span>
-                    <span class="text">Import from File</span>
-                </button>
-            </div>
         </div>
 
         <!-- Statistics Dashboard -->
         <div id="statsContainer" class="stats-container hidden">
-            <div class="stat-card" data-filter="total" id="statCardTotal">
-                <div class="stat-value" id="statTotal">0</div>
-                <div class="stat-label">Total</div>
+            <div class="stat-card stat-card-compact" data-filter="total" id="statCardTotal">
+                <span class="stat-label-compact">Total:</span>
+                <span class="stat-value-compact" id="statTotal">0</span>
             </div>
-            <div class="stat-card" data-filter="active" id="statCardActive">
-                <div class="stat-value" id="statActive">0</div>
-                <div class="stat-label">Active</div>
+            <div class="stat-card stat-card-compact" data-filter="active" id="statCardActive">
+                <span class="stat-label-compact">Active:</span>
+                <span class="stat-value-compact" id="statActive">0</span>
             </div>
-            <div class="stat-card" data-filter="delivered" id="statCardDelivered">
-                <div class="stat-value" id="statDelivered">0</div>
-                <div class="stat-label">Delivered</div>
+            <div class="stat-card stat-card-compact" data-filter="delivered" id="statCardDelivered">
+                <span class="stat-label-compact">Delivered:</span>
+                <span class="stat-value-compact" id="statDelivered">0</span>
             </div>
-            <div class="stat-card" data-filter="exception" id="statCardException">
-                <div class="stat-value" id="statException">0</div>
-                <div class="stat-label">Issues</div>
+            <div class="stat-card stat-card-compact" data-filter="exception" id="statCardException">
+                <span class="stat-label-compact">Issues:</span>
+                <span class="stat-value-compact" id="statException">0</span>
             </div>
         </div>
 
@@ -238,9 +229,11 @@
                 </select>
             </div>
 
-            <div class="filter-group">
+            <div class="filter-group filter-group-search hidden" id="searchContainer">
                 <input type="text" id="searchInput" placeholder="Search AWB...">
             </div>
+
+            <button type="button" id="searchToggleBtn" class="icon-btn" title="Toggle Search">🔍</button>
         </div>
 
         <!-- Mobile Cards Container (shown on mobile) -->

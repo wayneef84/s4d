@@ -1066,32 +1066,9 @@
         var panel = document.getElementById('detailPanel');
         if (!panel) return;
 
-        panel.classList.remove('hidden');
-
-        // Show placeholder content
-        var awbEl = document.getElementById('detailAWB');
-        if (awbEl) awbEl.textContent = 'No selection';
-
-        var detailInfo = document.getElementById('detailInfo');
-        if (detailInfo) {
-            detailInfo.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 1rem;">Select a shipment from the table</p>';
-        }
-
-        var eventsEl = document.getElementById('detailEvents');
-        if (eventsEl) {
-            eventsEl.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 2rem;">Click a shipment from the table to view details</p>';
-        }
-
-        var payloadEl = document.getElementById('payloadViewer');
-        if (payloadEl) payloadEl.innerHTML = '';
-
-        // Hide action buttons
-        var deleteBtn = document.getElementById('deleteTrackingBtn');
-        var forceRefreshBtn = document.getElementById('forceRefreshBtn');
-        var downloadBtn = document.getElementById('downloadPayloadBtn');
-        if (deleteBtn) deleteBtn.style.display = 'none';
-        if (forceRefreshBtn) forceRefreshBtn.style.display = 'none';
-        if (downloadBtn) downloadBtn.style.display = 'none';
+        // On desktop, hide the panel completely instead of showing "No selection"
+        // This extends the table to full width
+        panel.classList.add('hidden');
     };
 
     // ============================================================
@@ -1428,6 +1405,15 @@
         // Detail panel
         document.getElementById('closeDetailBtn').onclick = function() {
             self.closeDetail();
+        };
+
+        // Search toggle
+        document.getElementById('searchToggleBtn').onclick = function() {
+            var searchContainer = document.getElementById('searchContainer');
+            searchContainer.classList.toggle('hidden');
+            if (!searchContainer.classList.contains('hidden')) {
+                document.getElementById('searchInput').focus();
+            }
         };
 
         // Window resize handler for split view

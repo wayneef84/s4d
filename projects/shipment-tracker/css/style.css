@@ -544,6 +544,27 @@ textarea,
     font-weight: 600;
 }
 
+/* Compact stat cards: label: # format */
+.stat-card-compact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+}
+
+.stat-label-compact {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 600;
+}
+
+.stat-value-compact {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.95);
+}
+
 /* ============================================================
    FILTER BAR
    ============================================================ */
