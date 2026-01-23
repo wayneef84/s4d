@@ -538,13 +538,13 @@ textarea,
 .stat-value {
     font-size: 2rem;
     font-weight: bold;
-    color: var(--primary-color);
+    color: #1e40af; /* Darker blue for better contrast */
     margin-bottom: 0.25rem;
 }
 
 .stat-label {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: #374151; /* Darker gray for better readability */
     font-weight: 600;
 }
 

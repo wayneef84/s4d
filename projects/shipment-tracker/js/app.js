@@ -65,6 +65,9 @@
             // Load settings
             await this.loadSettings();
 
+            // Check URL parameters for initial filter
+            this.loadURLParams();
+
             // Load trackings
             await this.loadTrackings();
 
@@ -74,12 +77,45 @@
             // Update stats
             this.updateStats();
 
+            // Set initial active stat card
+            this.setActiveStatCard();
+
             // Show success message
             this.showToast('Shipment Tracker loaded successfully', 'success');
 
         } catch (err) {
             console.error('[App] Initialization failed:', err);
             this.showToast('Failed to initialize app: ' + err.message, 'error');
+        }
+    };
+
+    // ============================================================
+    // URL PARAMETERS
+    // ============================================================
+
+    ShipmentTrackerApp.prototype.loadURLParams = function() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var filterParam = urlParams.get('filter');
+
+        if (filterParam) {
+            var validFilters = ['total', 'active', 'delivered', 'exception'];
+            if (validFilters.indexOf(filterParam) !== -1) {
+                this.currentFilters.statFilter = filterParam;
+                console.log('[App] Loaded filter from URL:', filterParam);
+            }
+        }
+    };
+
+    ShipmentTrackerApp.prototype.setActiveStatCard = function() {
+        // Set the active stat card based on currentFilters.statFilter
+        var allCards = document.querySelectorAll('.stat-card');
+        for (var i = 0; i < allCards.length; i++) {
+            allCards[i].classList.remove('active');
+        }
+
+        var activeCard = document.querySelector('.stat-card[data-filter="' + this.currentFilters.statFilter + '"]');
+        if (activeCard) {
+            activeCard.classList.add('active');
         }
     };
 
