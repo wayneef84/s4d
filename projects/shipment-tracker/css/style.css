@@ -568,7 +568,7 @@ textarea,
 
 .filter-group label {
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.9); /* Light white for better contrast */
     white-space: nowrap;
 }
 

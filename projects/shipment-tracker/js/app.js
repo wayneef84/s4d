@@ -89,6 +89,9 @@
                 await this.pruneOldShipments(true);
             }
 
+            // Open detail from URL if specified
+            this.openDetailFromURL();
+
             // Show success message
             this.showToast('Shipment Tracker loaded successfully', 'success');
 
@@ -104,8 +107,9 @@
 
     ShipmentTrackerApp.prototype.loadURLParams = function() {
         var urlParams = new URLSearchParams(window.location.search);
-        var filterParam = urlParams.get('filter');
 
+        // Filter parameter
+        var filterParam = urlParams.get('filter');
         if (filterParam) {
             var validFilters = ['total', 'active', 'delivered', 'exception'];
             if (validFilters.indexOf(filterParam) !== -1) {
@@ -113,6 +117,43 @@
                 console.log('[App] Loaded filter from URL:', filterParam);
             }
         }
+
+        // AWB parameter (to auto-open detail panel)
+        var awbParam = urlParams.get('awb');
+        var carrierParam = urlParams.get('carrier');
+        if (awbParam) {
+            this.urlParamsAwb = awbParam;
+            this.urlParamsCarrier = carrierParam; // Optional
+            console.log('[App] Will open detail for AWB:', awbParam, 'Carrier:', carrierParam || 'any');
+        }
+    };
+
+    ShipmentTrackerApp.prototype.openDetailFromURL = function() {
+        if (!this.urlParamsAwb) return;
+
+        var awb = this.urlParamsAwb;
+        var carrier = this.urlParamsCarrier;
+
+        // Find matching tracking
+        var matching = this.trackings.filter(function(t) {
+            if (carrier) {
+                return t.awb === awb && t.carrier === carrier;
+            } else {
+                return t.awb === awb;
+            }
+        });
+
+        if (matching.length > 0) {
+            console.log('[App] Opening detail from URL for:', matching[0].awb);
+            this.showDetail(matching[0].awb);
+        } else {
+            console.log('[App] No matching shipment found for AWB:', awb);
+            this.showToast('Shipment not found: ' + awb, 'warning');
+        }
+
+        // Clear URL params so it doesn't re-open on refresh
+        delete this.urlParamsAwb;
+        delete this.urlParamsCarrier;
     };
 
     ShipmentTrackerApp.prototype.setActiveStatCard = function() {
