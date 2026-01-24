@@ -699,6 +699,23 @@ kbd {
     opacity: 0.7;
 }
 
+/* Status columns */
+.status-icon-column {
+    width: 40px;
+    padding: 0.75rem 0.25rem !important;
+}
+
+.status-text-column {
+    min-width: 120px;
+}
+
+/* Hide status text on narrow widths (< 1200px), keep icon visible */
+@media (max-width: 1199px) {
+    .status-text-column {
+        display: none;
+    }
+}
+
 /* Empty State */
 .empty-state {
     text-align: center;

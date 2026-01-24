@@ -569,15 +569,19 @@
         carrierCell.textContent = tracking.carrier;
         row.appendChild(carrierCell);
 
-        // Status (with icon)
+        // Status Icon (separate column)
+        var iconCell = document.createElement('td');
+        iconCell.className = 'status-icon-column';
+        iconCell.textContent = this.getStatusIcon(tracking.deliverySignal);
+        iconCell.style.fontSize = '1.25rem';
+        row.appendChild(iconCell);
+
+        // Status Text (separate column)
         var statusCell = document.createElement('td');
-        var statusIcon = document.createElement('span');
-        statusIcon.textContent = this.getStatusIcon(tracking.deliverySignal) + ' ';
-        statusIcon.style.marginRight = '0.25rem';
+        statusCell.className = 'status-text-column';
         var statusBadge = document.createElement('span');
         statusBadge.className = 'status-badge status-' + tracking.deliverySignal.toLowerCase();
         statusBadge.textContent = tracking.status;
-        statusCell.appendChild(statusIcon);
         statusCell.appendChild(statusBadge);
         row.appendChild(statusCell);
 
@@ -591,14 +595,30 @@
         destCell.textContent = this.formatLocation(tracking.destination);
         row.appendChild(destCell);
 
-        // Est. Delivery
+        // Est. Delivery (date only, no time)
         var deliveryCell = document.createElement('td');
-        deliveryCell.textContent = tracking.estimatedDelivery || 'N/A';
+        if (tracking.estimatedDelivery) {
+            var estDate = new Date(tracking.estimatedDelivery);
+            deliveryCell.textContent = (estDate.getMonth() + 1) + '/' + estDate.getDate();
+        } else {
+            deliveryCell.textContent = 'N/A';
+        }
         row.appendChild(deliveryCell);
 
-        // Last Updated
+        // Last Updated (mm/dd 24hr:mm:ss TZ)
         var updatedCell = document.createElement('td');
-        updatedCell.textContent = this.formatDate(tracking.lastUpdated);
+        if (tracking.lastUpdated) {
+            var date = new Date(tracking.lastUpdated);
+            var month = date.getMonth() + 1;
+            var day = date.getDate();
+            var hours = String(date.getHours()).padStart(2, '0');
+            var minutes = String(date.getMinutes()).padStart(2, '0');
+            var seconds = String(date.getSeconds()).padStart(2, '0');
+            var tz = date.toLocaleTimeString('en-US', {timeZoneName: 'short'}).split(' ').pop();
+            updatedCell.textContent = month + '/' + day + ' ' + hours + ':' + minutes + ':' + seconds + ' ' + tz;
+        } else {
+            updatedCell.textContent = 'N/A';
+        }
         row.appendChild(updatedCell);
 
         // Actions
