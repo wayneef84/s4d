@@ -46,7 +46,8 @@ body {
 /* Allow text selection in specific areas */
 input,
 textarea,
-.selectable {
+.selectable,
+.detail-panel {
     user-select: text;
     -webkit-user-select: text;
 }

@@ -1211,13 +1211,51 @@
 
             var desc = document.createElement('div');
             desc.className = 'event-desc';
-            desc.textContent = event.description;
+            // Handle description as object or string
+            if (typeof event.description === 'object' && event.description !== null) {
+                desc.textContent = JSON.stringify(event.description);
+            } else {
+                desc.textContent = event.description || 'No description';
+            }
             item.appendChild(desc);
 
             var loc = document.createElement('div');
             loc.className = 'event-location';
-            loc.textContent = event.location;
+            // Handle location as object or string
+            if (typeof event.location === 'object' && event.location !== null) {
+                loc.textContent = TrackingUtils.formatLocation(event.location);
+            } else {
+                loc.textContent = event.location || '';
+            }
             item.appendChild(loc);
+
+            // Add expandable JSON button if event has extra data
+            var hasExtraData = Object.keys(event).some(function(key) {
+                return key !== 'timestamp' && key !== 'description' && key !== 'location';
+            });
+
+            if (hasExtraData) {
+                var expandBtn = document.createElement('button');
+                expandBtn.className = 'event-expand-btn';
+                expandBtn.textContent = '📋 Raw Data';
+                expandBtn.style.cssText = 'margin-top: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;';
+
+                expandBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    var pre = this.nextElementSibling;
+                    if (pre && pre.tagName === 'PRE') {
+                        pre.style.display = pre.style.display === 'none' ? 'block' : 'none';
+                        this.textContent = pre.style.display === 'none' ? '📋 Raw Data' : '🔼 Hide Data';
+                    }
+                };
+
+                var jsonPre = document.createElement('pre');
+                jsonPre.style.cssText = 'display: none; margin-top: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 4px; font-size: 0.75rem; overflow-x: auto;';
+                jsonPre.textContent = JSON.stringify(event, null, 2);
+
+                item.appendChild(expandBtn);
+                item.appendChild(jsonPre);
+            }
 
             timeline.appendChild(item);
         }

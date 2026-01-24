@@ -4,6 +4,19 @@
  *
  * API Docs: https://developer.fedex.com/api/en-us/catalog/track.html
  *
+ * CORS LIMITATION:
+ * Direct browser-to-FedEx API calls are blocked by CORS policy.
+ * FedEx does not allow client-side JavaScript to call their API directly.
+ *
+ * Solutions:
+ * 1. Use mock data (default when no credentials provided)
+ * 2. Set up a server-side proxy to relay requests
+ * 3. Use browser extension or Electron app (bypasses CORS)
+ *
+ * Current behavior:
+ * - If credentials present: Attempts real API call (will fail with CORS error in browser)
+ * - If no credentials: Uses mock data generator (works perfectly)
+ *
  * @author Wayne Fong (wayneef84)
  * @version 1.0.0
  */
