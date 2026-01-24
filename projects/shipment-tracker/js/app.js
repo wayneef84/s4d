@@ -697,16 +697,12 @@
 
         // Make AWB a clickable link to carrier website
         var trackingURL = TrackingUtils.getCarrierTrackingURL(tracking.carrier, tracking.awb);
-        var isMobile = window.innerWidth < 768;
-        var displayAWB = TrackingUtils.truncateAWB(tracking.awb, isMobile);
-
         if (trackingURL) {
             var awbLink = document.createElement('a');
             awbLink.href = trackingURL;
             awbLink.target = '_blank';
             awbLink.rel = 'noopener noreferrer';
-            awbLink.textContent = displayAWB;
-            awbLink.title = tracking.awb; // Show full AWB on hover
+            awbLink.textContent = tracking.awb;
             awbLink.style.color = 'inherit';
             awbLink.style.textDecoration = 'none';
             awbLink.onclick = function(e) {
@@ -714,8 +710,7 @@
             };
             awbDiv.appendChild(awbLink);
         } else {
-            awbDiv.textContent = displayAWB;
-            awbDiv.title = tracking.awb; // Show full AWB on hover
+            awbDiv.textContent = tracking.awb;
         }
 
         // Add duplicate badge if needed
@@ -1602,6 +1597,13 @@
                 window.app.renderTrackings();
             };
         });
+
+        // Set "Total" as active by default
+        var totalBtn = document.getElementById('filterTotal');
+        if (totalBtn) {
+            totalBtn.classList.add('active');
+            window.app.currentFilter = 'total';
+        }
 
         // Window resize handler for split view
         window.addEventListener('resize', function() {
