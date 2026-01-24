@@ -351,6 +351,20 @@ If proxy URL provided → Proxy mode (key on server)
 
 ## API Integration
 
+### Supported Carriers (v1.1.0)
+
+| Carrier | Status | Mock Data | Real API | Test AWBs |
+|---------|--------|-----------|----------|-----------|
+| DHL | ✅ Active | ✅ Yes | ✅ Ready | 6 sandbox AWBs |
+| FedEx | ✅ Active | ✅ Yes | ⚠️ Stubbed | `111111111111`, `222222222222` |
+| UPS | ✅ Active | ✅ Yes | ⚠️ Stubbed | `1Z999AA10123456780`, `1Z999AA10123456784` |
+
+**Notes:**
+- All carriers have mock data generators for testing without API keys
+- FedEx and UPS have OAuth 2.0 implementations stubbed (ready when user provides keys)
+- Test tracking numbers documented in `TEST_DATA.md`
+- Real API adapters will activate automatically when user configures API keys in Settings
+
 ### Adapter Pattern
 
 Each carrier adapter extends the base adapter:
@@ -566,6 +580,8 @@ await db.clearAll();
 /* Mobile: < 768px */
 - Show card-based layout
 - Hide table
+- Mobile bottom bar (2 rows: stat filters + actions)
+- Hide desktop stats container
 - Stack filters vertically
 - Full-width inputs (44px min height)
 
@@ -573,56 +589,136 @@ await db.clearAll();
 - Show table
 - Detail panel as overlay
 - Filters in single row
+- Desktop stats visible
 
 /* Desktop: ≥ 1024px */
 - Show table
 - Detail panel side-by-side (TODO)
 - All features visible
+- Desktop stats visible
 ```
 
-### Mobile Card Structure
+### Mobile Bottom Bar (v1.1.0)
+
+**Replaces FAB buttons with integrated 2-row control bar**
 
 ```
 ┌─────────────────────────────────────┐
-│ 🚚  1...23456  DHL  2x    ⌄        │ ← Header (always visible)
+│ Row 1: Stat Filters                 │
+│ [🚚 Active 5] [✅ Delivered 12] [⚠️ Issues 2] │
+├─────────────────────────────────────┤
+│ Row 2: Actions                      │
+│ [📦 Total 19] [➕ Add] [🔍 Filter]  │
+└─────────────────────────────────────┘
+```
+
+**Features:**
+- **Fixed position** at bottom of screen with safe area insets
+- **Stat filter buttons** (Row 1): Click to filter shipments by status
+  - Active state highlighting (blue background + white text)
+  - Live count badges update automatically
+  - Click again to clear filter
+- **Action buttons** (Row 2):
+  - Total: Shows all shipments (acts as "clear filter")
+  - Add: Opens add tracking form
+  - Filter: Toggles filter bar visibility
+
+**CSS Classes:**
+- `.mobile-bottom-bar` - Container (fixed position, bottom: 0)
+- `.bottom-bar-row` - Row container (flexbox)
+- `.bottom-bar-btn` - Individual button (flex: 1, card-like)
+- `.bottom-bar-btn.active` - Active filter state
+- `.btn-icon`, `.btn-label`, `.btn-count` - Button content elements
+
+### Mobile Card Structure (v1.1.0)
+
+```
+┌─────────────────────────────────────┐
+│ 🚚  1234567890  DHL  2x    ⌄        │ ← Header (always visible)
+│     (clickable link)                │
 ├─────────────────────────────────────┤
 │ Full AWB: 1234567890                │
 │ Route: Hong Kong → NYC              │ ← Body (collapsed)
 │ Est. Delivery: Jan 25, 2026         │
 │ Last Updated: Jan 23, 2026          │
-│ [📋 Details]  [🗑️ Delete]           │
+│ [🔗 Track on DHL] [📋 Details] [🗑️ Delete] │
 └─────────────────────────────────────┘
 ```
 
-### AWB Truncation Logic
+**Changes in v1.1.0:**
+- ✅ AWB now shows **full tracking number** (no truncation)
+- ✅ AWB is **clickable link** to carrier tracking page
+- ✅ New **"Track on {Carrier}"** button in card actions
+- ✅ Duplicate badge still works (compares first 2 + last 5 chars)
 
+### AWB Display Logic (v1.1.0)
+
+**Desktop Table:**
 ```javascript
-function truncateAWB(awb) {
-    // If 7 chars or less, show full
-    if (awb.length <= 7) return awb;
-
-    // Otherwise: first char + "..." + last 5 chars
-    return awb.charAt(0) + '...' + awb.slice(-5);
+// AWB shown truncated with hover tooltip
+function renderTableRow(tracking) {
+    var awbCell = document.createElement('td');
+    var awbLink = document.createElement('a');
+    awbLink.href = TrackingUtils.getCarrierTrackingURL(tracking.carrier, tracking.awb);
+    awbLink.textContent = truncateAWB(tracking.awb); // "1...67890"
+    awbLink.title = tracking.awb; // Full AWB on hover
+    // ...
 }
-
-// Examples:
-// '1234567890' → '1...67890'
-// '1Z999AA10123456784' → '1...56784'
-// '12345' → '12345' (unchanged)
 ```
 
-### Duplicate Detection
+**Mobile Cards:**
+```javascript
+// AWB shown in full
+function createMobileCard(tracking) {
+    var awbDiv = document.createElement('div');
+    var awbLink = document.createElement('a');
+    awbLink.href = TrackingUtils.getCarrierTrackingURL(tracking.carrier, tracking.awb);
+    awbLink.textContent = tracking.awb; // Full AWB: "1234567890"
+    // ...
+}
+```
+
+### Carrier Tracking Links (v1.1.0)
 
 ```javascript
-// Build map of truncated AWBs
-var truncatedMap = {
-    '1...67890': ['1234567890', '1999967890'], // 2 AWBs
-    '1...56784': ['1Z999AA10123456784']        // 1 AWB
+// TrackingUtils.getCarrierTrackingURL(carrier, awb)
+var urls = {
+    'DHL': 'https://www.dhl.com/en/express/tracking.html?AWB=' + awb,
+    'FEDEX': 'https://www.fedex.com/fedextrack/?trknbr=' + awb,
+    'UPS': 'https://www.ups.com/track?tracknum=' + awb
 };
 
-// If truncated has multiple full AWBs, show badge
-if (truncatedMap[truncated].length > 1) {
-    badge.textContent = truncatedMap[truncated].length + 'x';
+// Usage in mobile card:
+var trackBtn = document.createElement('a');
+trackBtn.href = getCarrierTrackingURL('DHL', '1234567890');
+trackBtn.target = '_blank';
+trackBtn.rel = 'noopener noreferrer';
+trackBtn.textContent = '🔗 Track on DHL';
+```
+
+### Duplicate Detection (v1.1.0)
+
+```javascript
+// Build map of similar AWBs (first 2 + last 5 chars)
+var duplicateMap = {};
+trackings.forEach(function(t) {
+    var key = t.awb.length > 7
+        ? (t.awb.substring(0, 2) + t.awb.slice(-5))
+        : t.awb;
+    if (!duplicateMap[key]) duplicateMap[key] = [];
+    duplicateMap[key].push(t.awb);
+});
+
+// Example:
+// duplicateMap = {
+//     '1267890': ['1234567890', '1999967890'], // 2 similar AWBs
+//     '1Z56784': ['1Z999AA10123456784']        // 1 AWB
+// };
+
+// Show badge if similar AWBs exist
+var key = awb.substring(0, 2) + awb.slice(-5);
+if (duplicateMap[key].length > 1) {
+    badge.textContent = duplicateMap[key].length + 'x';
 }
 ```
 
@@ -839,6 +935,153 @@ var filtered = this.trackings.filter(function(t) {
 5. **Don't use `async/await` in IIFEs** - Only in prototype methods
 6. **Don't forget `.bind(this)`** - When using callbacks in filter/map/forEach
 7. **Don't commit API keys** - Always use `YOUR_KEY` placeholder in docs
+
+---
+
+## Debug Menu (v1.1.0)
+
+### Overview
+
+Press **`Ctrl+Shift+D`** (or **`Cmd+Shift+D`** on Mac) to open the debug menu.
+
+**Purpose:** Quickly load test data, test UI with various scenarios, and manage trackings without manual entry.
+
+**File:** `js/debug.js`
+
+### Features
+
+#### 1. Load Test Datasets
+
+**Mixed Scenarios** (6 shipments)
+- 2 DHL trackings (active, delivered)
+- 2 FedEx trackings (delivered, in transit)
+- 2 UPS trackings (out for delivery, exception)
+
+**Carrier-Specific Datasets**
+- DHL: 6 official sandbox tracking numbers
+- FedEx: 3 test scenarios (delivered, transit, exception)
+- UPS: 3 test scenarios (delivered, transit, exception)
+
+#### 2. Quick Add Single Tracking
+
+Add individual test trackings by carrier and status:
+- **DHL:** Active (`1234567890`), Delivered (`9876543210`)
+- **FedEx:** In Transit (`222222222222`), Exception (`999999999999`)
+- **UPS:** Out for Delivery (`1Z999AA10123456781`), Delivered (`1Z999AA10123456780`)
+
+#### 3. Actions
+
+**Refresh All Trackings**
+- Fetches latest data for all shipments
+- Uses appropriate adapter (mock or real API)
+- Shows confirmation dialog first
+
+**Clear All Data**
+- Deletes all tracking data from IndexedDB
+- ⚠️ Cannot be undone - shows confirmation dialog
+- Useful for resetting to clean state
+
+#### 4. Real-Time Stats
+
+- **Tracking Count:** Number of shipments in database
+- **DB Size:** Estimated IndexedDB size (KB/MB)
+
+### Usage
+
+```javascript
+// Open debug menu
+// Press Ctrl+Shift+D (or Cmd+Shift+D)
+
+// Or programmatically:
+DebugMenu.open();
+
+// Close debug menu
+DebugMenu.close();
+
+// Or press Ctrl+Shift+D again
+```
+
+### Implementation Details
+
+**Module:** `window.DebugMenu`
+
+**Methods:**
+- `init()` - Initialize keyboard shortcut and button handlers
+- `toggle()` - Open/close menu
+- `open()` - Show menu with dark overlay
+- `close()` - Hide menu and remove overlay
+- `updateStats()` - Refresh tracking count and DB size display
+- `loadMixedDataset()` - Load 6-shipment mixed dataset
+- `loadDHLDataset()` - Load DHL sandbox AWBs
+- `loadFedExDataset()` - Load FedEx test AWBs
+- `loadUPSDataset()` - Load UPS test AWBs
+- `addTracking(awb, carrier)` - Add single test tracking
+- `trackAndSave(awb, carrier)` - Fetch mock data and save to DB
+- `refreshAll()` - Force refresh all trackings
+- `clearAll()` - Delete all data with confirmation
+
+**HTML Structure:**
+```html
+<div id="debugMenu" class="debug-menu">
+    <div class="debug-header">
+        <h3>🛠️ Debug Menu</h3>
+        <button id="debugCloseBtn">✕</button>
+    </div>
+    <div class="debug-content">
+        <!-- Dataset buttons -->
+        <!-- Quick add buttons -->
+        <!-- Action buttons -->
+        <!-- Stats display -->
+    </div>
+</div>
+```
+
+**CSS Classes:**
+- `.debug-menu` - Modal container (fixed, centered)
+- `.debug-overlay` - Dark backdrop (click to close)
+- `.debug-btn` - Primary action button
+- `.debug-btn-sm` - Small inline button
+- `.debug-btn-warning` - Orange button (Refresh All)
+- `.debug-btn-danger` - Red button (Clear All)
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+D` (Windows/Linux) | Toggle debug menu |
+| `Cmd+Shift+D` (Mac) | Toggle debug menu |
+| `Esc` | Close debug menu (click overlay) |
+
+### Mock Data Generation
+
+Each carrier adapter has a `generateMockTrackingData(awb)` function that creates realistic test data:
+
+**FedEx Example:**
+```javascript
+// Different scenarios based on AWB pattern
+var isDelivered = awb.includes('111111') || awb.endsWith('0');
+var isException = awb.includes('999') || awb.endsWith('9');
+
+// Generate status, timestamps, events
+return {
+    awb: awb,
+    carrier: 'FedEx',
+    status: isDelivered ? 'Delivered' : 'In Transit',
+    deliverySignal: isDelivered ? 'DELIVERY' : 'IN_TRANSIT',
+    events: generateMockEvents(awb, isDelivered, isException),
+    // ...
+};
+```
+
+### Test Data Source
+
+Test tracking numbers are documented in **`TEST_DATA.md`** with:
+- Official sandbox AWBs (DHL)
+- Test scenarios (FedEx, UPS)
+- Mock data format examples
+- API documentation links
+
+---
 
 ### Testing Commands
 

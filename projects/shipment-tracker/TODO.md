@@ -7,17 +7,19 @@
 ## 🔥 PRIORITY 0: Critical Mobile UX Fixes (IMMEDIATE)
 
 ### Mobile Table Redesign (Critical)
-- [ ] **Replace table with card-based layout on mobile**
+- [x] ~~**Replace table with card-based layout on mobile**~~ (Fixed: 2026-01-23)
   - Each shipment = horizontal panel/card
   - Status icon on left (visual indicator: ✅ delivered, 🚚 in transit, ⚠️ exception, etc.)
-  - AWB truncated: `1...23456` (show first + last digits)
+  - **CHANGE:** AWB now shown in full (no truncation) - more readable
   - Tap to expand for full details
   - Full AWB shown when expanded
+  - **NEW:** Mobile bottom bar with 2 rows (stat filters + actions)
+  - **NEW:** Clickable AWBs link to carrier tracking websites
 
-- [ ] **Duplicate AWB Detection**
-  - If truncated AWBs look identical, show indicator (e.g., badge "2x")
-  - Link to jump between duplicate AWBs
-  - Visual differentiation (different colors/borders)
+- [x] ~~**Duplicate AWB Detection**~~ (Fixed: 2026-01-23)
+  - If similar AWBs exist (first 2 + last 5 chars match), show indicator (e.g., badge "2x")
+  - Visual badge on card header
+  - Works with full AWB display
 
 - [ ] **Desktop: Keep table, improve detail panel**
   - Show detail panel side-by-side with table (split view)
@@ -42,6 +44,19 @@
 ---
 
 ## 🚀 PRIORITY 1: Core Functionality (v1.1)
+
+### Carrier Integration - Mock Adapters (Development)
+- [x] ~~**FedEx** - Mock adapter with test data~~ (Added: 2026-01-23)
+  - Mock data generator for testing without API keys
+  - OAuth implementation stubbed for future use
+  - Test tracking numbers documented in TEST_DATA.md
+  - Realistic event timeline generation
+
+- [x] ~~**UPS** - Mock adapter with test data~~ (Added: 2026-01-23)
+  - Mock data generator for testing without API keys
+  - OAuth implementation stubbed for future use
+  - Test tracking numbers documented in TEST_DATA.md
+  - UPS-specific status codes and events
 
 ### Carrier Integration - Additional Carriers
 - [ ] **OnTrac** - Amazon's preferred carrier
@@ -218,6 +233,16 @@
 
 ## 🔧 PRIORITY 7: Developer Experience
 
+### Debug Tools
+- [x] ~~**Debug Menu**~~ (Added: 2026-01-23)
+  - Keyboard shortcut: Ctrl+Shift+D (Cmd+Shift+D on Mac)
+  - Load predefined test datasets (Mixed, DHL, FedEx, UPS)
+  - Quick-add single test trackings per carrier/status
+  - Refresh all trackings
+  - Clear all data with confirmation
+  - Real-time stats display (count + DB size)
+  - Overlay modal with dark backdrop
+
 ### Code Quality
 - [ ] Add JSDoc comments to all functions
 - [ ] Create unit tests (Jest or Mocha)
@@ -289,9 +314,9 @@
 - [x] ~~Force refresh button not working~~ (Fixed: 130c53d)
 - [x] ~~Missing JSON payload viewer~~ (Fixed: 63bedad)
 - [x] ~~No way to clear all data~~ (Fixed: 0dcbbbe)
-- [ ] **Table is garbage on mobile** (Priority 0)
-- [ ] **Stats dashboard has poor contrast** (Priority 0)
-- [ ] **Filter bar layout broken on mobile** (Priority 0)
+- [x] ~~**Table is garbage on mobile**~~ (Fixed: 2026-01-23 - Mobile cards implemented)
+- [ ] **Stats dashboard has poor contrast** (Partially fixed - mobile bottom bar replaces stats)
+- [ ] **Filter bar layout broken on mobile** (Filter toggle in bottom bar)
 - [ ] **Detail panel should be split view on desktop** (Priority 0)
 
 ### Medium Priority
@@ -299,7 +324,7 @@
 - [ ] No validation for duplicate AWB entries
 - [ ] Settings panel doesn't scroll on mobile
 - [ ] Toast notifications can overlap
-- [ ] No indication when AWBs are truncated and identical
+- [x] ~~No indication when AWBs are truncated and identical~~ (Fixed: 2026-01-23 - Badge shows duplicate count)
 
 ### Low Priority
 - [ ] Export panel could use better styling

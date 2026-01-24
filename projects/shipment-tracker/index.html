@@ -104,6 +104,19 @@
                 <button id="clearAllDataBtn" class="btn-danger">Clear All Data</button>
             </div>
 
+            <div class="settings-section">
+                <h3>Developer Tools</h3>
+                <p class="help-text">Testing and debugging utilities</p>
+
+                <button id="openDebugMenuBtn" class="btn-secondary" style="width: 100%;">
+                    🛠️ Open Debug Menu
+                </button>
+
+                <p class="help-text" style="margin-top: 0.5rem; font-size: 0.875rem;">
+                    Keyboard shortcut: <kbd>Ctrl+Shift+D</kbd> (or <kbd>Cmd+Shift+D</kbd> on Mac)
+                </p>
+            </div>
+
             <div class="settings-actions">
                 <button id="saveSettingsBtn" class="btn-primary">Save Settings</button>
                 <button id="closeSettingsBtn" class="btn-secondary">Close</button>
@@ -153,6 +166,7 @@
 
         <!-- Add Tracking Form -->
         <div class="add-tracking-section">
+            <button type="button" id="mobileAddCloseBtn" class="mobile-add-close-btn" style="display: none;">✕</button>
             <form id="addTrackingForm" class="add-tracking-form">
                 <div class="form-row">
                     <input
@@ -236,11 +250,82 @@
             <button type="button" id="searchToggleBtn" class="icon-btn" title="Toggle Search">🔍</button>
         </div>
 
-        <!-- Mobile Filter Toggle Button -->
-        <button type="button" id="mobileFilterToggle" class="mobile-filter-toggle" title="Toggle Filters" style="display: none;">🔍</button>
+        <!-- Debug Menu (Ctrl+Shift+D to toggle) -->
+        <div id="debugMenu" class="debug-menu" style="display: none;">
+            <div class="debug-header">
+                <h3>🛠️ Debug Menu</h3>
+                <button type="button" id="debugCloseBtn" class="debug-close-btn">✕</button>
+            </div>
+            <div class="debug-content">
+                <div class="debug-section">
+                    <h4>Load Test Dataset</h4>
+                    <button type="button" class="debug-btn" id="loadMixedDataset">Load Mixed Scenarios (6 shipments)</button>
+                    <button type="button" class="debug-btn" id="loadDHLDataset">Load DHL Test Numbers (6 shipments)</button>
+                    <button type="button" class="debug-btn" id="loadFedExDataset">Load FedEx Test Numbers (3 shipments)</button>
+                    <button type="button" class="debug-btn" id="loadUPSDataset">Load UPS Test Numbers (3 shipments)</button>
+                </div>
+                <div class="debug-section">
+                    <h4>Quick Add Single Tracking</h4>
+                    <button type="button" class="debug-btn debug-btn-sm" id="addDHLActive">DHL - Active</button>
+                    <button type="button" class="debug-btn debug-btn-sm" id="addDHLDelivered">DHL - Delivered</button>
+                    <button type="button" class="debug-btn debug-btn-sm" id="addFedExTransit">FedEx - In Transit</button>
+                    <button type="button" class="debug-btn debug-btn-sm" id="addFedExException">FedEx - Exception</button>
+                    <button type="button" class="debug-btn debug-btn-sm" id="addUPSOutForDelivery">UPS - Out for Delivery</button>
+                    <button type="button" class="debug-btn debug-btn-sm" id="addUPSDelivered">UPS - Delivered</button>
+                </div>
+                <div class="debug-section">
+                    <h4>Actions</h4>
+                    <button type="button" class="debug-btn debug-btn-warning" id="refreshAllTracking">Refresh All Trackings</button>
+                    <button type="button" class="debug-btn debug-btn-danger" id="clearAllData">Clear All Data</button>
+                </div>
+                <div class="debug-section">
+                    <h4>Info</h4>
+                    <div class="debug-info">
+                        <span id="debugTrackingCount">Trackings: 0</span> |
+                        <span id="debugDBSize">DB Size: 0 KB</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        <!-- Mobile Add Tracking Toggle Button -->
-        <button type="button" id="mobileAddToggle" class="mobile-add-toggle" title="Add Tracking" style="display: none;">➕</button>
+        <!-- Mobile Bottom Bar (2 rows: stat filters + actions) -->
+        <div id="mobileBottomBar" class="mobile-bottom-bar" style="display: none;">
+            <!-- Row 1: Stat Filters -->
+            <div class="bottom-bar-row stat-filters">
+                <button type="button" class="bottom-bar-btn" data-filter="active" id="filterActive">
+                    <span class="btn-icon">🚚</span>
+                    <span class="btn-label">Active</span>
+                    <span class="btn-count" id="countActive">0</span>
+                </button>
+                <button type="button" class="bottom-bar-btn" data-filter="delivered" id="filterDelivered">
+                    <span class="btn-icon">✅</span>
+                    <span class="btn-label">Delivered</span>
+                    <span class="btn-count" id="countDelivered">0</span>
+                </button>
+                <button type="button" class="bottom-bar-btn" data-filter="exception" id="filterIssues">
+                    <span class="btn-icon">⚠️</span>
+                    <span class="btn-label">Issues</span>
+                    <span class="btn-count" id="countIssues">0</span>
+                </button>
+            </div>
+
+            <!-- Row 2: Actions -->
+            <div class="bottom-bar-row actions">
+                <button type="button" class="bottom-bar-btn action-btn" data-filter="total" id="filterTotal">
+                    <span class="btn-icon">📦</span>
+                    <span class="btn-label">Total</span>
+                    <span class="btn-count" id="countTotal">0</span>
+                </button>
+                <button type="button" class="bottom-bar-btn action-btn" id="mobileAddToggle">
+                    <span class="btn-icon">➕</span>
+                    <span class="btn-label">Add</span>
+                </button>
+                <button type="button" class="bottom-bar-btn action-btn" id="mobileFilterToggle">
+                    <span class="btn-icon">🔍</span>
+                    <span class="btn-label">Filter</span>
+                </button>
+            </div>
+        </div>
 
         <!-- Mobile Cards Container (shown on mobile) -->
         <div id="mobileCardsContainer" class="mobile-cards-container">
@@ -345,6 +430,9 @@
     <script src="js/normalizer.js"></script>
     <script src="js/api/base.js"></script>
     <script src="js/api/dhl.js"></script>
+    <script src="js/api/fedex.js"></script>
+    <script src="js/api/ups.js"></script>
+    <script src="js/debug.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

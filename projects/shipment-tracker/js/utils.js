@@ -217,6 +217,29 @@
         return null;
     }
 
+    /**
+     * Get carrier tracking URL
+     * @param {string} carrier - Carrier name (DHL, FedEx, UPS)
+     * @param {string} awb - Tracking number
+     * @returns {string|null} Tracking URL or null
+     */
+    function getCarrierTrackingURL(carrier, awb) {
+        if (!carrier || !awb) {
+            return null;
+        }
+
+        carrier = carrier.toUpperCase();
+        awb = encodeURIComponent(awb.trim());
+
+        var urls = {
+            'DHL': 'https://www.dhl.com/en/express/tracking.html?AWB=' + awb + '&brand=DHL',
+            'FEDEX': 'https://www.fedex.com/fedextrack/?trknbr=' + awb,
+            'UPS': 'https://www.ups.com/track?tracknum=' + awb
+        };
+
+        return urls[carrier] || null;
+    }
+
     // ============================================================
     // STATUS FORMATTING
     // ============================================================
@@ -476,6 +499,7 @@
         // AWB Validation
         validateAWB: validateAWB,
         detectCarrier: detectCarrier,
+        getCarrierTrackingURL: getCarrierTrackingURL,
 
         // Status
         getStatusBadgeClass: getStatusBadgeClass,

@@ -226,6 +226,18 @@ textarea,
     margin-bottom: 0.75rem;
 }
 
+kbd {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.75rem;
+    font-family: 'Courier New', monospace;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 .settings-panel label,
 .export-panel label {
     display: flex;
@@ -1126,6 +1138,8 @@ textarea,
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 0.25rem;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    word-break: break-all;
 }
 
 .card-awb-full {
@@ -1232,44 +1246,63 @@ textarea,
         display: none;
     }
 
-    /* Hide add tracking form on mobile (FAB replaces it) */
+    /* Hide add tracking form on mobile (bottom bar Add button shows it) */
     .add-tracking-section {
         display: none;
-    }
-
-    /* Move stats to bottom on portrait mobile */
-    .container {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .stats-container {
-        order: 999; /* Push to bottom */
-        margin-top: auto;
-        position: sticky;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
         bottom: 0;
         background: var(--bg-primary);
-        border-top: 2px solid var(--border-color);
-        z-index: 50;
-        gap: 0.5rem;
-        padding: 0.75rem;
+        z-index: 200;
+        overflow-y: auto;
+        padding: 1rem;
+        padding-top: calc(env(safe-area-inset-top) + 1rem);
+        padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
     }
 
-    .stat-card {
-        background: rgba(255, 255, 255, 0.95);
+    .add-tracking-section.visible-mobile {
+        display: block;
+    }
+
+    /* Close button for mobile add form */
+    .mobile-add-close-btn {
+        display: none !important;
+        position: fixed;
+        top: calc(env(safe-area-inset-top) + 0.5rem);
+        right: 1rem;
+        font-size: 2rem;
+        color: var(--text-primary);
+        cursor: pointer;
+        z-index: 201;
+        width: 44px;
+        height: 44px;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-secondary);
+        border-radius: 50%;
         border: 1px solid var(--border-color);
-        padding: 0.75rem;
+        padding: 0;
+        line-height: 1;
     }
 
-    .stat-value-compact,
-    .stat-value {
-        color: var(--primary-color) !important;
-        text-shadow: none;
+    .add-tracking-section.visible-mobile .mobile-add-close-btn {
+        display: flex !important;
     }
 
-    .stat-label-compact,
-    .stat-label {
-        color: var(--text-secondary) !important;
+    .mobile-add-close-btn:active {
+        background: var(--border-color);
+    }
+
+    /* Hide desktop stats container on mobile (bottom bar replaces it) */
+    .stats-container {
+        display: none !important;
+    }
+
+    /* Add padding to mobile cards container to account for bottom bar */
+    .mobile-cards-container {
+        padding-bottom: 140px; /* Space for 2-row bottom bar */
     }
 
     /* Hide filter bar on mobile by default */
@@ -1284,37 +1317,79 @@ textarea,
         display: flex;
     }
 
-    /* Mobile FABs (Floating Action Buttons) */
-    .mobile-filter-toggle,
-    .mobile-add-toggle {
+    /* Mobile Bottom Bar (2-row controls) */
+    .mobile-bottom-bar {
         display: block !important;
         position: fixed;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--bg-primary);
+        border-top: 2px solid var(--border-color);
+        z-index: 100;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .bottom-bar-row {
+        display: flex;
+        gap: 0.25rem;
+        padding: 0.5rem;
+    }
+
+    .bottom-bar-row.stat-filters {
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .bottom-bar-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        padding: 0.5rem;
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .bottom-bar-btn:active {
+        transform: scale(0.95);
+        background: var(--hover-color);
+    }
+
+    .bottom-bar-btn.active {
         background: var(--primary-color);
         color: white;
-        border: none;
-        font-size: 1.5rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        z-index: 100;
-        cursor: pointer;
+        border-color: var(--primary-color);
     }
 
-    .mobile-filter-toggle:active,
-    .mobile-add-toggle:active {
-        transform: scale(0.95);
+    .bottom-bar-btn.active .btn-count {
+        color: white;
     }
 
-    /* Position FABs vertically stacked on right side */
-    .mobile-filter-toggle {
-        bottom: 90px; /* Above Add button */
-        right: 20px;
+    .btn-icon {
+        font-size: 1.25rem;
+        line-height: 1;
     }
 
-    .mobile-add-toggle {
-        bottom: 20px;
-        right: 20px;
+    .btn-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1;
+    }
+
+    .btn-count {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1;
+    }
+
+    .bottom-bar-btn.active .btn-label {
+        color: white;
     }
 
     .filter-group {
@@ -1392,4 +1467,141 @@ textarea,
     body.detail-open .actions-column {
         display: none;
     }
+}
+
+/* ============================================================
+   DEBUG MENU
+   ============================================================ */
+
+.debug-menu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 2px solid var(--primary-color);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.debug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 10px 10px 0 0;
+}
+
+.debug-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.debug-close-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+}
+
+.debug-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.debug-content {
+    padding: 1rem;
+}
+
+.debug-section {
+    margin-bottom: 1.5rem;
+}
+
+.debug-section h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.debug-btn {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.debug-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.debug-btn:active {
+    transform: translateY(0);
+}
+
+.debug-btn-sm {
+    display: inline-block;
+    width: calc(50% - 0.25rem);
+    padding: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.debug-btn-sm:nth-child(odd) {
+    margin-right: 0.5rem;
+}
+
+.debug-btn-warning {
+    background: #f59e0b;
+}
+
+.debug-btn-warning:hover {
+    background: #d97706;
+}
+
+.debug-btn-danger {
+    background: #ef4444;
+}
+
+.debug-btn-danger:hover {
+    background: #dc2626;
+}
+
+.debug-info {
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+/* Dark overlay when debug menu is open */
+.debug-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
 }

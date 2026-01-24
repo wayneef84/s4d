@@ -78,6 +78,11 @@
             // Setup UI event listeners
             this.setupEventListeners();
 
+            // Initialize debug menu
+            if (window.DebugMenu) {
+                window.DebugMenu.init();
+            }
+
             // Update stats
             this.updateStats();
 
@@ -96,6 +101,10 @@
 
             // Open detail from URL if specified
             this.openDetailFromURL();
+
+            // Mark app as ready
+            this.ready = true;
+            console.log('[App] Initialization complete - app ready');
 
             // Show success message
             this.showToast('Shipment Tracker loaded successfully', 'success');
@@ -536,10 +545,23 @@
             row.classList.add('delivered');
         }
 
-        // AWB (truncated)
+        // AWB (truncated, clickable to carrier site)
         var awbCell = document.createElement('td');
-        awbCell.textContent = this.truncateAWB(tracking.awb);
-        awbCell.title = tracking.awb; // Full AWB on hover
+        var trackingURL = TrackingUtils.getCarrierTrackingURL(tracking.carrier, tracking.awb);
+        if (trackingURL) {
+            var awbLink = document.createElement('a');
+            awbLink.href = trackingURL;
+            awbLink.target = '_blank';
+            awbLink.rel = 'noopener noreferrer';
+            awbLink.textContent = this.truncateAWB(tracking.awb);
+            awbLink.title = tracking.awb + ' (click to track on ' + tracking.carrier + ' site)';
+            awbLink.style.textDecoration = 'none';
+            awbLink.style.color = 'var(--primary-color)';
+            awbCell.appendChild(awbLink);
+        } else {
+            awbCell.textContent = this.truncateAWB(tracking.awb);
+            awbCell.title = tracking.awb; // Full AWB on hover
+        }
         row.appendChild(awbCell);
 
         // Carrier
@@ -625,34 +647,35 @@
             return;
         }
 
-        // Detect duplicate AWBs (after truncation)
-        var truncatedMap = {};
+        // Detect duplicate AWBs (similar first 2 + last 5 chars)
+        var duplicateMap = {};
         for (var i = 0; i < this.filteredTrackings.length; i++) {
             var awb = this.filteredTrackings[i].awb;
-            var truncated = TrackingUtils.truncateAWB(awb);
-            if (!truncatedMap[truncated]) {
-                truncatedMap[truncated] = [];
+            // Create key from first 2 + last 5 chars for duplicate detection
+            var key = awb.length > 7 ? (awb.substring(0, 2) + awb.slice(-5)) : awb;
+            if (!duplicateMap[key]) {
+                duplicateMap[key] = [];
             }
-            truncatedMap[truncated].push(awb);
+            duplicateMap[key].push(awb);
         }
 
         // Render cards
         for (var j = 0; j < this.filteredTrackings.length; j++) {
             var tracking = this.filteredTrackings[j];
-            var card = this.createMobileCard(tracking, truncatedMap);
+            var card = this.createMobileCard(tracking, duplicateMap);
             container.appendChild(card);
         }
     };
 
-    ShipmentTrackerApp.prototype.createMobileCard = function(tracking, truncatedMap) {
+    ShipmentTrackerApp.prototype.createMobileCard = function(tracking, duplicateMap) {
         var self = this;
         var card = document.createElement('div');
         card.className = 'shipment-card';
         card.dataset.awb = tracking.awb;
 
-        // Detect if truncated AWB has duplicates
-        var truncated = TrackingUtils.truncateAWB(tracking.awb);
-        var hasDuplicates = truncatedMap[truncated] && truncatedMap[truncated].length > 1;
+        // Detect if similar AWBs exist (first 2 + last 5 chars match)
+        var key = tracking.awb.length > 7 ? (tracking.awb.substring(0, 2) + tracking.awb.slice(-5)) : tracking.awb;
+        var hasDuplicates = duplicateMap[key] && duplicateMap[key].length > 1;
 
         // Card Header
         var header = document.createElement('div');
@@ -671,13 +694,30 @@
 
         var awbDiv = document.createElement('div');
         awbDiv.className = 'card-awb';
-        awbDiv.textContent = truncated;
+
+        // Make AWB a clickable link to carrier website
+        var trackingURL = TrackingUtils.getCarrierTrackingURL(tracking.carrier, tracking.awb);
+        if (trackingURL) {
+            var awbLink = document.createElement('a');
+            awbLink.href = trackingURL;
+            awbLink.target = '_blank';
+            awbLink.rel = 'noopener noreferrer';
+            awbLink.textContent = tracking.awb;
+            awbLink.style.color = 'inherit';
+            awbLink.style.textDecoration = 'none';
+            awbLink.onclick = function(e) {
+                e.stopPropagation(); // Prevent card expansion
+            };
+            awbDiv.appendChild(awbLink);
+        } else {
+            awbDiv.textContent = tracking.awb; // Show full AWB on mobile
+        }
 
         // Add duplicate badge if needed
         if (hasDuplicates) {
             var badge = document.createElement('span');
             badge.className = 'card-duplicate-badge';
-            badge.textContent = truncatedMap[truncated].length + 'x';
+            badge.textContent = duplicateMap[key].length + 'x';
             badge.title = 'Multiple AWBs with similar numbers';
             awbDiv.appendChild(badge);
         }
@@ -724,6 +764,22 @@
         // Card Actions
         var actions = document.createElement('div');
         actions.className = 'card-actions';
+
+        // Track on carrier site button
+        var trackingURL = TrackingUtils.getCarrierTrackingURL(tracking.carrier, tracking.awb);
+        if (trackingURL) {
+            var trackBtn = document.createElement('a');
+            trackBtn.className = 'btn-primary';
+            trackBtn.href = trackingURL;
+            trackBtn.target = '_blank';
+            trackBtn.rel = 'noopener noreferrer';
+            trackBtn.textContent = '🔗 Track on ' + tracking.carrier;
+            trackBtn.style.textDecoration = 'none';
+            trackBtn.onclick = function(e) {
+                e.stopPropagation();
+            };
+            actions.appendChild(trackBtn);
+        }
 
         var viewBtn = document.createElement('button');
         viewBtn.className = 'btn-secondary';
@@ -1133,6 +1189,17 @@
             }).length;
             document.getElementById('statException').textContent = exceptions;
 
+            // Update mobile bottom bar counts
+            var countTotal = document.getElementById('countTotal');
+            var countActive = document.getElementById('countActive');
+            var countDelivered = document.getElementById('countDelivered');
+            var countIssues = document.getElementById('countIssues');
+
+            if (countTotal) countTotal.textContent = stats.totalTrackings;
+            if (countActive) countActive.textContent = stats.activeCount;
+            if (countDelivered) countDelivered.textContent = stats.deliveredCount;
+            if (countIssues) countIssues.textContent = exceptions;
+
             // Show stats if we have data
             if (stats.totalTrackings > 0) {
                 document.getElementById('statsContainer').classList.remove('hidden');
@@ -1349,6 +1416,16 @@
             self.clearAllData();
         };
 
+        // Debug menu button in settings
+        var openDebugMenuBtn = document.getElementById('openDebugMenuBtn');
+        if (openDebugMenuBtn) {
+            openDebugMenuBtn.onclick = function() {
+                if (window.DebugMenu) {
+                    window.DebugMenu.open();
+                }
+            };
+        }
+
         // Force refresh toggle - warn when enabling
         document.getElementById('enableForceRefresh').onchange = function() {
             if (this.checked) {
@@ -1460,7 +1537,7 @@
             }
         };
 
-        // Mobile filter toggle
+        // Mobile bottom bar - filter toggle
         var mobileFilterToggle = document.getElementById('mobileFilterToggle');
         if (mobileFilterToggle) {
             mobileFilterToggle.onclick = function() {
@@ -1469,7 +1546,7 @@
             };
         }
 
-        // Mobile add tracking toggle
+        // Mobile bottom bar - add tracking toggle
         var mobileAddToggle = document.getElementById('mobileAddToggle');
         if (mobileAddToggle) {
             mobileAddToggle.onclick = function() {
@@ -1483,6 +1560,42 @@
                 }
             };
         }
+
+        // Mobile add form close button
+        var mobileAddCloseBtn = document.getElementById('mobileAddCloseBtn');
+        if (mobileAddCloseBtn) {
+            mobileAddCloseBtn.onclick = function() {
+                var addTrackingSection = document.querySelector('.add-tracking-section');
+                addTrackingSection.classList.remove('visible-mobile');
+            };
+        }
+
+        // Mobile bottom bar - stat filter buttons
+        var filterButtons = document.querySelectorAll('.bottom-bar-btn[data-filter]');
+        filterButtons.forEach(function(btn) {
+            btn.onclick = function() {
+                var filter = btn.getAttribute('data-filter');
+
+                // Toggle active state
+                var wasActive = btn.classList.contains('active');
+
+                // Remove active from all filter buttons
+                filterButtons.forEach(function(b) {
+                    b.classList.remove('active');
+                });
+
+                // If wasn't active, activate this one and apply filter
+                if (!wasActive) {
+                    btn.classList.add('active');
+                    window.app.currentFilter = filter;
+                } else {
+                    window.app.currentFilter = null;
+                }
+
+                // Re-render with filter
+                window.app.renderTrackings();
+            };
+        });
 
         // Window resize handler for split view
         window.addEventListener('resize', function() {
@@ -1535,5 +1648,6 @@
 
     var app = new ShipmentTrackerApp();
     window.ShipmentTrackerApp = app;
+    window.app = app; // Also assign to window.app for debug menu compatibility
 
 })(window);

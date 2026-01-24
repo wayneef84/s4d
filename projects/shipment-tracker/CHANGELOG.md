@@ -25,6 +25,102 @@ The Shipment Tracker project was conceived as a utility tool to aggregate shipme
 
 ## Version History
 
+### v1.1.0 (2026-01-23) - Mobile UX Overhaul
+
+**🎯 Focus: Enhanced Mobile Experience + Multi-Carrier Support**
+
+#### 🎨 Mobile UI Improvements
+- **Mobile Bottom Bar** - Replaced FAB buttons with 2-row control bar
+  - Row 1: Active | Delivered | Issues (stat filters with live counts)
+  - Row 2: Total | Add | Filter (action buttons)
+  - Click filters to show/hide shipments by status
+  - Active state highlighting shows which filter is applied
+  - Auto-updates counts as data changes
+  - Safe area insets for notched devices
+
+- **Full AWB Display on Mobile** - Removed AWB truncation
+  - Mobile cards now show full tracking number (no `12...56789` truncation)
+  - More readable and allows direct copy/paste
+  - Duplicate detection still works (compares first 2 + last 5 chars)
+  - Duplicate badge shows count when similar AWBs exist (e.g., "2x")
+
+- **Carrier Website Links** - Click to track on carrier site
+  - AWBs are now clickable links to official tracking pages
+  - Desktop: Blue links in AWB table column
+  - Mobile: Clickable AWB in card header + "Track on {Carrier}" button
+  - Opens in new tab with secure `rel="noopener noreferrer"`
+  - Supports DHL, FedEx, UPS with proper URL formats
+
+#### 🚚 Multi-Carrier Support
+- **FedEx API Adapter** (`js/api/fedex.js`)
+  - Mock data generator for testing without API keys
+  - OAuth 2.0 implementation (stubbed for future use)
+  - Realistic event timeline generation
+  - Test tracking numbers: `111111111111` (delivered), `222222222222` (in transit)
+  - Configurable sandbox/production endpoints
+  - Rate limiting: 1000 req/day, 5 req/sec
+
+- **UPS API Adapter** (`js/api/ups.js`)
+  - Mock data generator for testing without API keys
+  - OAuth 2.0 implementation (stubbed for future use)
+  - UPS-specific status codes and events
+  - Test tracking numbers: `1Z999AA10123456780` (delivered), `1Z999AA10123456784` (in transit)
+  - Configurable test/production endpoints
+  - Rate limiting: 500 req/day, 2 req/sec
+
+- **Test Data Documentation** (`TEST_DATA.md`)
+  - Official DHL sandbox tracking numbers (6 test AWBs)
+  - FedEx test tracking numbers with status scenarios
+  - UPS test tracking numbers and API endpoints
+  - Mock data format examples for each carrier
+
+#### 🛠️ Developer Tools
+- **Debug Menu** - Press `Ctrl+Shift+D` (or `Cmd+Shift+D` on Mac)
+  - **Load Test Datasets:**
+    - Mixed Scenarios (6 shipments - all carriers, various statuses)
+    - DHL Test Numbers (6 official sandbox AWBs)
+    - FedEx Test Numbers (3 test scenarios)
+    - UPS Test Numbers (3 test scenarios)
+  - **Quick Add Single Tracking:**
+    - DHL: Active, Delivered
+    - FedEx: In Transit, Exception
+    - UPS: Out for Delivery, Delivered
+  - **Actions:**
+    - Refresh All Trackings (fetch latest data)
+    - Clear All Data (with confirmation)
+  - **Real-time Stats:**
+    - Tracking count display
+    - Estimated DB size (KB/MB)
+  - Overlay modal with dark backdrop
+  - Close via button, overlay click, or `Ctrl+Shift+D` again
+
+#### 📝 Utility Enhancements
+- **Carrier Tracking URL Generator** (`TrackingUtils.getCarrierTrackingURL()`)
+  - Returns official carrier tracking page URLs
+  - Properly encodes AWB numbers
+  - Handles DHL, FedEx, UPS with correct query parameters
+
+#### 🐛 Bug Fixes
+- Fixed duplicate AWB detection logic (now works with full AWB display)
+- Improved mobile bottom bar spacing for safe areas
+- Desktop stats container now hidden on mobile (bottom bar replaces it)
+- Mobile cards container padding adjusted for bottom bar height (140px)
+
+#### 📦 New Files
+- `js/api/fedex.js` - FedEx Track API adapter
+- `js/api/ups.js` - UPS Track API adapter
+- `js/debug.js` - Debug menu module
+- `TEST_DATA.md` - Test tracking numbers and mock data guide
+
+#### 🔧 Modified Files
+- `index.html` - Added debug menu HTML, mobile bottom bar, new script tags
+- `css/style.css` - Added bottom bar styles, debug menu styles, removed FAB styles
+- `js/utils.js` - Added `getCarrierTrackingURL()` function
+- `js/app.js` - Bottom bar handlers, full AWB display, debug menu initialization
+- `TODO.md` - Marked completed features (mobile cards, carrier adapters, debug menu)
+
+---
+
 ### v1.0.0-alpha (2026-01-22) - Initial Development
 
 **Phase 1: Planning & Documentation (Completed)**
