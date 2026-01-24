@@ -211,6 +211,17 @@
         console.log('[App] Loading settings...');
 
         try {
+            // Ensure default structure exists first
+            if (!this.settings.apiKeys) {
+                this.settings.apiKeys = { DHL: '', FedEx: { clientId: '', clientSecret: '' }, UPS: { apiKey: '', username: '' } };
+            }
+            if (!this.settings.queryEngine) {
+                this.settings.queryEngine = { cooldownMinutes: 10, skipDelivered: true, enableForceRefresh: false };
+            }
+            if (!this.settings.dataManagement) {
+                this.settings.dataManagement = { pruneAfterDays: 90, autoPruneEnabled: false };
+            }
+
             // Load API keys
             var apiKeys = await this.db.getSetting('apiKeys');
             if (apiKeys) {
@@ -241,12 +252,21 @@
         console.log('[App] Saving settings...');
 
         try {
-            // Ensure apiKeys structure is correct (migration from old format)
+            // Ensure all settings objects exist (migration from old format or after reset)
+            if (!this.settings.apiKeys || typeof this.settings.apiKeys !== 'object') {
+                this.settings.apiKeys = { DHL: '', FedEx: {}, UPS: {} };
+            }
             if (typeof this.settings.apiKeys.FedEx !== 'object' || !this.settings.apiKeys.FedEx) {
                 this.settings.apiKeys.FedEx = { clientId: '', clientSecret: '' };
             }
             if (typeof this.settings.apiKeys.UPS !== 'object' || !this.settings.apiKeys.UPS) {
                 this.settings.apiKeys.UPS = { apiKey: '', username: '' };
+            }
+            if (!this.settings.queryEngine || typeof this.settings.queryEngine !== 'object') {
+                this.settings.queryEngine = { cooldownMinutes: 10, skipDelivered: true, enableForceRefresh: false };
+            }
+            if (!this.settings.dataManagement || typeof this.settings.dataManagement !== 'object') {
+                this.settings.dataManagement = { pruneAfterDays: 90, autoPruneEnabled: false };
             }
 
             // Get values from form
@@ -367,6 +387,19 @@
             this.updateStats();
 
             this.showToast('Tracking added: ' + awb, 'success');
+
+            // Auto-refresh to fetch tracking data
+            try {
+                console.log('[App] Auto-refreshing new tracking:', awb);
+                var freshData = await this.queryEngine(awb, carrier);
+                await this.db.saveTracking(freshData);
+                await this.loadTrackings();
+                this.updateStats();
+                this.showToast('✅ Tracking data loaded!', 'success');
+            } catch (refreshErr) {
+                console.error('[App] Auto-refresh failed:', refreshErr);
+                this.showToast('⚠️ Added but could not fetch data. Try Force Refresh.', 'warning');
+            }
 
             // Clear form
             document.getElementById('awbInput').value = '';
