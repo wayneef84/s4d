@@ -1069,6 +1069,8 @@
 
     ShipmentTrackerApp.prototype.applyFilters = function() {
         console.log('[App] Applying filters:', this.currentFilters);
+        console.log('[App] Total trackings before filter:', this.trackings.length);
+        console.log('[App] Trackings AWBs:', this.trackings.map(function(t) { return t.awb + '_' + t.carrier; }));
 
         this.filteredTrackings = this.trackings.filter(function(t) {
             // Stat filter
@@ -1090,11 +1092,16 @@
             return matchesStatFilter && matchesCarrier && matchesStatus && matchesSearch;
         }.bind(this));
 
+        console.log('[App] Filtered trackings count:', this.filteredTrackings.length);
+        console.log('[App] Filtered AWBs:', this.filteredTrackings.map(function(t) { return t.awb + '_' + t.carrier; }));
+
         // Apply sorting
         this.applySorting();
 
+        console.log('[App] Rendering table and cards...');
         this.renderTable();
         this.renderMobileCards();
+        console.log('[App] Render complete');
     };
 
     /**
