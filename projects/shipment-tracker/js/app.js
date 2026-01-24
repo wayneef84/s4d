@@ -493,8 +493,19 @@
 
             console.log('[App] Calling db.deleteTracking with awb:', awb, 'carrier:', carrier);
             await this.db.deleteTracking(awb, carrier);
-            console.log('[App] Delete successful, reloading trackings');
+            console.log('[App] Delete successful, verifying deletion...');
 
+            // Verify the tracking is actually gone
+            var verifyCheck = await this.db.getTracking(awb, carrier);
+            if (verifyCheck) {
+                console.error('[App] ERROR: Tracking still exists after delete!', verifyCheck);
+                this.showToast('❌ Delete failed - tracking still exists', 'error');
+                return;
+            } else {
+                console.log('[App] Verification passed - tracking no longer exists');
+            }
+
+            console.log('[App] Reloading trackings');
             await this.loadTrackings();
             this.updateStats();
             this.closeDetail();
