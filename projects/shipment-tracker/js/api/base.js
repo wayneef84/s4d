@@ -299,6 +299,18 @@
     // PUBLIC API
     // ============================================================
 
+    /**
+     * Check if mock data mode is enabled
+     * @returns {boolean}
+     */
+    function shouldUseMockData() {
+        // Check if ShipmentTrackerApp exists and has settings
+        if (window.app && window.app.settings && window.app.settings.development) {
+            return window.app.settings.development.useMockData === true;
+        }
+        return false;
+    }
+
     window.APIBase = {
         // Configuration
         config: API_CONFIG,
@@ -313,6 +325,9 @@
         // Proxy
         getProxyURL: getProxyURL,
         shouldUseProxy: shouldUseProxy,
+
+        // Mock Data
+        shouldUseMockData: shouldUseMockData,
 
         // Rate Limiting
         checkRateLimit: checkRateLimit,

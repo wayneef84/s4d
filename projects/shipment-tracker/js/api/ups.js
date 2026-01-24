@@ -53,6 +53,12 @@
     function trackShipment(awb) {
         console.log('[UPS] Tracking shipment:', awb);
 
+        // Check if mock data mode is enabled
+        if (APIBase.shouldUseMockData()) {
+            console.log('[UPS] Mock data mode enabled, bypassing real API');
+            return trackWithMockData(awb);
+        }
+
         // Check rate limit
         var rateLimitCheck = APIBase.checkRateLimit('UPS');
         if (!rateLimitCheck.allowed) {

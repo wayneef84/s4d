@@ -42,6 +42,12 @@
         console.log('[DHL] Tracking shipment:', awb);
 
         // Check rate limit
+        // Check if mock data mode is enabled
+        if (APIBase.shouldUseMockData()) {
+            console.log('[DHL] Mock data mode enabled, bypassing real API');
+            return trackWithMockData(awb);
+        }
+
         var rateLimitCheck = APIBase.checkRateLimit('DHL');
         if (!rateLimitCheck.allowed) {
             return Promise.reject(new Error(rateLimitCheck.reason));

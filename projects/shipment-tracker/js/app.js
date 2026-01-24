@@ -49,6 +49,9 @@
             dataManagement: {
                 pruneAfterDays: 90,
                 autoPruneEnabled: false
+            },
+            development: {
+                useMockData: false
             }
         };
 
@@ -262,6 +265,13 @@
             }
             this.populateDataManagementFields();
 
+            // Load development config
+            var development = await this.db.getSetting('development');
+            if (development) {
+                this.settings.development = development;
+            }
+            this.populateDevelopmentFields();
+
         } catch (err) {
             console.error('[App] Failed to load settings:', err);
         }
@@ -287,6 +297,9 @@
             if (!this.settings.dataManagement || typeof this.settings.dataManagement !== 'object') {
                 this.settings.dataManagement = { pruneAfterDays: 90, autoPruneEnabled: false };
             }
+            if (!this.settings.development || typeof this.settings.development !== 'object') {
+                this.settings.development = { useMockData: false };
+            }
 
             // Get values from form
             this.settings.apiKeys.DHL = document.getElementById('dhlApiKey').value;
@@ -303,10 +316,13 @@
             this.settings.dataManagement.pruneAfterDays = parseInt(document.getElementById('pruneAfterDays').value);
             this.settings.dataManagement.autoPruneEnabled = document.getElementById('autoPruneEnabled').checked;
 
+            this.settings.development.useMockData = document.getElementById('useMockData').checked;
+
             // Save to database
             await this.db.saveSetting('apiKeys', this.settings.apiKeys);
             await this.db.saveSetting('queryEngine', this.settings.queryEngine);
             await this.db.saveSetting('dataManagement', this.settings.dataManagement);
+            await this.db.saveSetting('development', this.settings.development);
 
             this.showToast('Settings saved successfully', 'success');
             this.closeSettings();
@@ -353,6 +369,13 @@
         }
         document.getElementById('pruneAfterDays').value = this.settings.dataManagement.pruneAfterDays || 90;
         document.getElementById('autoPruneEnabled').checked = this.settings.dataManagement.autoPruneEnabled || false;
+    };
+
+    ShipmentTrackerApp.prototype.populateDevelopmentFields = function() {
+        if (!this.settings.development) {
+            this.settings.development = { useMockData: false };
+        }
+        document.getElementById('useMockData').checked = this.settings.development.useMockData || false;
     };
 
     // ============================================================

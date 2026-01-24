@@ -30,11 +30,8 @@
 
         <!-- Settings Panel (Hidden by default) -->
         <div id="settingsPanel" class="settings-panel hidden">
-            <div class="panel-header">
-                <h2>Settings</h2>
-            </div>
-
             <div class="settings-content">
+                <h2>Settings</h2>
 
             <div class="settings-section">
                 <h3 class="collapsible-header" data-target="apiKeysContent">
@@ -128,6 +125,19 @@
 
                 <p class="help-text" style="margin-top: 0.5rem; font-size: 0.875rem;">
                     Keyboard shortcut: <kbd>Ctrl+Shift+D</kbd> (or <kbd>Cmd+Shift+D</kbd> on Mac)
+                </p>
+            </div>
+
+            <div class="settings-group">
+                <h3>Development</h3>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" id="useMockData">
+                    <span>Use mock data (bypass real APIs)</span>
+                </label>
+
+                <p class="help-text" style="margin-top: 0.5rem; font-size: 0.875rem;">
+                    When enabled, all tracking queries will use simulated data instead of real carrier APIs. Useful for testing without API keys or rate limits.
                 </p>
             </div>
 
