@@ -1430,7 +1430,7 @@
         }
     };
 
-    ShipmentTrackerApp.prototype._generateRefreshStatusBreakdown = function(allTrackings, staleTrackings) {
+    ShipmentTrackerApp.prototype._generateRefreshStatusBreakdown = function(trackingsToRefresh, staleTrackings) {
         var breakdown = 'Refresh Status Breakdown:\n\n';
 
         // Group by carrier
@@ -1440,21 +1440,12 @@
         carriers.forEach(function(carrier) {
             carrierStats[carrier] = {
                 stale: 0,
-                fresh: 0,
-                delivered: 0
+                fresh: 0
             };
         });
 
-        // Count stale trackings by carrier
-        staleTrackings.forEach(function(t) {
-            var carrier = t.carrier || 'Unknown';
-            if (carrierStats[carrier]) {
-                carrierStats[carrier].stale++;
-            }
-        });
-
-        // Count fresh (not stale) and delivered
-        allTrackings.forEach(function(t) {
+        // Count stale and fresh from trackingsToRefresh (already filtered by skipDelivered)
+        trackingsToRefresh.forEach(function(t) {
             var carrier = t.carrier || 'Unknown';
             if (!carrierStats[carrier]) return;
 
@@ -1462,38 +1453,33 @@
                 return st.trackingId === t.trackingId;
             });
 
-            if (!isStale) {
+            if (isStale) {
+                carrierStats[carrier].stale++;
+            } else {
                 carrierStats[carrier].fresh++;
-            }
-            if (t.delivered) {
-                carrierStats[carrier].delivered++;
             }
         });
 
         // Build breakdown message
         var totalStale = 0;
         var totalFresh = 0;
-        var totalDelivered = 0;
 
         carriers.forEach(function(carrier) {
             var stats = carrierStats[carrier];
-            if (stats.stale > 0 || stats.fresh > 0 || stats.delivered > 0) {
+            if (stats.stale > 0 || stats.fresh > 0) {
                 breakdown += carrier + ':\n';
                 breakdown += '  • Stale (will refresh): ' + stats.stale + '\n';
                 breakdown += '  • Fresh (within cooldown): ' + stats.fresh + '\n';
-                breakdown += '  • Delivered: ' + stats.delivered + '\n';
                 breakdown += '\n';
 
                 totalStale += stats.stale;
                 totalFresh += stats.fresh;
-                totalDelivered += stats.delivered;
             }
         });
 
         breakdown += 'Total:\n';
         breakdown += '  • Stale (will refresh): ' + totalStale + '\n';
         breakdown += '  • Fresh (within cooldown): ' + totalFresh + '\n';
-        breakdown += '  • Delivered: ' + totalDelivered + '\n';
 
         return breakdown;
     };
@@ -1965,11 +1951,30 @@
     // PANEL CONTROLS
     // ============================================================
 
+    ShipmentTrackerApp.prototype.ensureSettingsInitialized = function() {
+        // Ensure settings object structure exists (after clear data or init failure)
+        if (!this.settings) {
+            this.settings = {};
+        }
+        if (!this.settings.apiKeys) {
+            this.settings.apiKeys = { DHL: '', FedEx: { clientId: '', clientSecret: '' }, UPS: { apiKey: '', username: '' } };
+        }
+        if (!this.settings.queryEngine) {
+            this.settings.queryEngine = { cooldownMinutes: 720, skipDelivered: true, enableForceRefresh: true, skipRefreshConfirmation: false };
+        }
+        if (!this.settings.dataManagement) {
+            this.settings.dataManagement = { pruneAfterDays: 90, autoPruneEnabled: false };
+        }
+    };
+
     ShipmentTrackerApp.prototype.toggleSettings = function() {
         var panel = document.getElementById('settingsPanel');
         var wasHidden = panel.classList.contains('hidden');
 
         if (wasHidden) {
+            // Ensure settings are initialized before populating fields
+            this.ensureSettingsInitialized();
+
             // Opening - populate with current saved settings
             this.populateAPIKeyFields();
             this.populateQueryEngineFields();
