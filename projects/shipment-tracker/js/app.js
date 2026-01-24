@@ -41,7 +41,7 @@
                 UPS: { apiKey: '', username: '' }
             },
             queryEngine: {
-                cooldownMinutes: 10,
+                cooldownMinutes: 720, // 12 hours
                 skipDelivered: true,
                 enableForceRefresh: true,
                 skipRefreshConfirmation: false
@@ -282,7 +282,7 @@
                 this.settings.apiKeys.UPS = { apiKey: '', username: '' };
             }
             if (!this.settings.queryEngine || typeof this.settings.queryEngine !== 'object') {
-                this.settings.queryEngine = { cooldownMinutes: 10, skipDelivered: true, enableForceRefresh: false };
+                this.settings.queryEngine = { cooldownMinutes: 720, skipDelivered: true, enableForceRefresh: true, skipRefreshConfirmation: false };
             }
             if (!this.settings.dataManagement || typeof this.settings.dataManagement !== 'object') {
                 this.settings.dataManagement = { pruneAfterDays: 90, autoPruneEnabled: false };
@@ -1352,31 +1352,43 @@
                 });
             }
 
-            if (trackingsToRefresh.length === 0) {
-                this.showToast('No trackings to refresh', 'info');
+            // Apply cooldown filter - only refresh stale trackings
+            var now = new Date().getTime();
+            var cooldownMs = this.settings.queryEngine.cooldownMinutes * 60 * 1000;
+
+            var staleTrackings = trackingsToRefresh.filter(function(t) {
+                if (!t.lastChecked) return true; // Never checked
+                var lastCheckedTime = new Date(t.lastChecked).getTime();
+                return (now - lastCheckedTime) > cooldownMs;
+            });
+
+            // Generate status breakdown by carrier
+            var statusBreakdown = this._generateRefreshStatusBreakdown(trackingsToRefresh, staleTrackings);
+
+            if (staleTrackings.length === 0) {
+                this.showToast('No stale trackings to refresh. All trackings are within cooldown period.', 'info');
                 return;
             }
 
-            // Ask for confirmation unless skipRefreshConfirmation is enabled
+            // Show status breakdown and ask for confirmation
             if (!this.settings.queryEngine.skipRefreshConfirmation) {
-                var message = 'Refresh all ' + trackingsToRefresh.length + ' tracking(s)?\n\n' +
-                             'This will make ' + trackingsToRefresh.length + ' API call(s) and may count against rate limits.';
+                var message = statusBreakdown + '\n\nProceed with refresh?';
                 if (!confirm(message)) {
                     return;
                 }
             }
 
             // Show progress
-            this.showToast('🔄 Refreshing ' + trackingsToRefresh.length + ' tracking(s)...', 'info');
+            this.showToast('🔄 Refreshing ' + staleTrackings.length + ' tracking(s)...', 'info');
 
             var successCount = 0;
             var failCount = 0;
 
             // Refresh each tracking sequentially to avoid rate limit issues
-            for (var i = 0; i < trackingsToRefresh.length; i++) {
-                var tracking = trackingsToRefresh[i];
+            for (var i = 0; i < staleTrackings.length; i++) {
+                var tracking = staleTrackings[i];
                 try {
-                    console.log('[App] Refreshing ' + (i + 1) + '/' + trackingsToRefresh.length + ':', tracking.awb, tracking.carrier);
+                    console.log('[App] Refreshing ' + (i + 1) + '/' + staleTrackings.length + ':', tracking.awb, tracking.carrier);
 
                     // Call query engine to get fresh data
                     var freshData = await this.queryEngine(tracking.awb, tracking.carrier);
@@ -1406,6 +1418,74 @@
             console.error('[App] Refresh all failed:', err);
             this.showToast('Refresh all failed: ' + err.message, 'error');
         }
+    };
+
+    ShipmentTrackerApp.prototype._generateRefreshStatusBreakdown = function(allTrackings, staleTrackings) {
+        var breakdown = 'Refresh Status Breakdown:\n\n';
+
+        // Group by carrier
+        var carriers = ['DHL', 'FedEx', 'UPS', 'USPS'];
+        var carrierStats = {};
+
+        carriers.forEach(function(carrier) {
+            carrierStats[carrier] = {
+                stale: 0,
+                fresh: 0,
+                delivered: 0
+            };
+        });
+
+        // Count stale trackings by carrier
+        staleTrackings.forEach(function(t) {
+            var carrier = t.carrier || 'Unknown';
+            if (carrierStats[carrier]) {
+                carrierStats[carrier].stale++;
+            }
+        });
+
+        // Count fresh (not stale) and delivered
+        allTrackings.forEach(function(t) {
+            var carrier = t.carrier || 'Unknown';
+            if (!carrierStats[carrier]) return;
+
+            var isStale = staleTrackings.some(function(st) {
+                return st.trackingId === t.trackingId;
+            });
+
+            if (!isStale) {
+                carrierStats[carrier].fresh++;
+            }
+            if (t.delivered) {
+                carrierStats[carrier].delivered++;
+            }
+        });
+
+        // Build breakdown message
+        var totalStale = 0;
+        var totalFresh = 0;
+        var totalDelivered = 0;
+
+        carriers.forEach(function(carrier) {
+            var stats = carrierStats[carrier];
+            if (stats.stale > 0 || stats.fresh > 0 || stats.delivered > 0) {
+                breakdown += carrier + ':\n';
+                breakdown += '  • Stale (will refresh): ' + stats.stale + '\n';
+                breakdown += '  • Fresh (within cooldown): ' + stats.fresh + '\n';
+                breakdown += '  • Delivered: ' + stats.delivered + '\n';
+                breakdown += '\n';
+
+                totalStale += stats.stale;
+                totalFresh += stats.fresh;
+                totalDelivered += stats.delivered;
+            }
+        });
+
+        breakdown += 'Total:\n';
+        breakdown += '  • Stale (will refresh): ' + totalStale + '\n';
+        breakdown += '  • Fresh (within cooldown): ' + totalFresh + '\n';
+        breakdown += '  • Delivered: ' + totalDelivered + '\n';
+
+        return breakdown;
     };
 
     ShipmentTrackerApp.prototype.forceRefreshTracking = async function(awb) {

@@ -75,7 +75,7 @@
 
                 <label for="cooldownMinutes">
                     <span>Cooldown (minutes):</span>
-                    <input type="number" id="cooldownMinutes" min="1" max="60" value="10">
+                    <input type="number" id="cooldownMinutes" min="1" max="1440" value="720">
                 </label>
 
                 <label class="checkbox-label">
@@ -321,8 +321,12 @@
                 </button>
             </div>
 
-            <!-- Row 2: Stat Filters (Active, Delivered, Issues, Total) -->
+            <!-- Row 2: Stat Filters (Total, Active, Delivered, Issues) -->
             <div class="bottom-bar-row stat-filters">
+                <button type="button" class="bottom-bar-btn stat-filter-btn" data-filter="total" id="filterTotal" title="Total Shipments">
+                    <span class="btn-icon">📦</span>
+                    <span class="btn-count" id="countTotal">0</span>
+                </button>
                 <button type="button" class="bottom-bar-btn stat-filter-btn" data-filter="active" id="filterActive" title="Active Shipments">
                     <span class="btn-icon">🚚</span>
                     <span class="btn-count" id="countActive">0</span>
@@ -334,10 +338,6 @@
                 <button type="button" class="bottom-bar-btn stat-filter-btn" data-filter="exception" id="filterIssues" title="Issues & Exceptions">
                     <span class="btn-icon">⚠️</span>
                     <span class="btn-count" id="countIssues">0</span>
-                </button>
-                <button type="button" class="bottom-bar-btn stat-filter-btn" data-filter="total" id="filterTotal" title="Total Shipments">
-                    <span class="btn-icon">📦</span>
-                    <span class="btn-count" id="countTotal">0</span>
                 </button>
             </div>
         </div>
