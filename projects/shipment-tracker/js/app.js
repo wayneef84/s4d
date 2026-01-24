@@ -43,7 +43,8 @@
             queryEngine: {
                 cooldownMinutes: 10,
                 skipDelivered: true,
-                enableForceRefresh: false
+                enableForceRefresh: true,
+                skipRefreshConfirmation: false
             },
             dataManagement: {
                 pruneAfterDays: 90,
@@ -297,6 +298,7 @@
             this.settings.queryEngine.cooldownMinutes = parseInt(document.getElementById('cooldownMinutes').value);
             this.settings.queryEngine.skipDelivered = document.getElementById('skipDelivered').checked;
             this.settings.queryEngine.enableForceRefresh = document.getElementById('enableForceRefresh').checked;
+            this.settings.queryEngine.skipRefreshConfirmation = document.getElementById('skipRefreshConfirmation').checked;
 
             this.settings.dataManagement.pruneAfterDays = parseInt(document.getElementById('pruneAfterDays').value);
             this.settings.dataManagement.autoPruneEnabled = document.getElementById('autoPruneEnabled').checked;
@@ -335,6 +337,7 @@
         document.getElementById('cooldownMinutes').value = this.settings.queryEngine.cooldownMinutes;
         document.getElementById('skipDelivered').checked = this.settings.queryEngine.skipDelivered;
         document.getElementById('enableForceRefresh').checked = this.settings.queryEngine.enableForceRefresh;
+        document.getElementById('skipRefreshConfirmation').checked = this.settings.queryEngine.skipRefreshConfirmation || false;
     };
 
     ShipmentTrackerApp.prototype.populateDataManagementFields = function() {
@@ -372,10 +375,10 @@
                 throw new Error('AWB and carrier are required');
             }
 
-            // Check if already exists
-            var existing = await this.db.getTracking(awb);
+            // Check if already exists for this carrier
+            var existing = await this.db.getTracking(awb, carrier);
             if (existing) {
-                throw new Error('Tracking number already exists');
+                throw new Error('Tracking number already exists for ' + carrier);
             }
 
             // Create new tracking record
@@ -430,15 +433,24 @@
         }
     };
 
-    ShipmentTrackerApp.prototype.deleteTracking = async function(awb) {
-        console.log('[App] Deleting tracking:', awb);
+    ShipmentTrackerApp.prototype.deleteTracking = async function(awb, carrier) {
+        console.log('[App] Deleting tracking:', awb, carrier);
 
-        if (!confirm('Delete tracking ' + awb + '?')) {
+        // If carrier not provided, get it from the tracking record
+        if (!carrier) {
+            var tracking = await this.db.getTracking(awb);
+            if (tracking) {
+                carrier = tracking.carrier;
+            }
+        }
+
+        var displayName = carrier ? (awb + ' (' + carrier + ')') : awb;
+        if (!confirm('Delete tracking ' + displayName + '?')) {
             return;
         }
 
         try {
-            await this.db.deleteTracking(awb);
+            await this.db.deleteTracking(awb, carrier);
             await this.loadTrackings();
             this.updateStats();
             this.closeDetail();
@@ -505,7 +517,7 @@
 
             // Delete pruned shipments from database
             for (var i = 0; i < toPrune.length; i++) {
-                await this.db.deleteTracking(toPrune[i].awb);
+                await this.db.deleteTracking(toPrune[i].awb, toPrune[i].carrier);
             }
 
             // Reload data
@@ -697,6 +709,11 @@
         // Actions
         var actionsCell = document.createElement('td');
         actionsCell.className = 'actions-column';
+        actionsCell.style.display = 'flex';
+        actionsCell.style.gap = '0.5rem';
+        actionsCell.style.justifyContent = 'center';
+
+        // Details button
         var detailsBtn = document.createElement('button');
         detailsBtn.innerHTML = '<span class="btn-icon">📋</span><span class="btn-text">Details</span>';
         detailsBtn.className = 'btn-secondary btn-details';
@@ -705,6 +722,29 @@
             self.showDetail(tracking.awb);
         };
         actionsCell.appendChild(detailsBtn);
+
+        // Refresh button (icon only)
+        var refreshBtn = document.createElement('button');
+        refreshBtn.innerHTML = '🔄';
+        refreshBtn.className = 'btn-icon-only';
+        refreshBtn.title = 'Force Refresh';
+        refreshBtn.onclick = function(e) {
+            e.stopPropagation();
+            self.forceRefreshTracking(tracking.awb);
+        };
+        actionsCell.appendChild(refreshBtn);
+
+        // Delete button (icon only)
+        var deleteBtn = document.createElement('button');
+        deleteBtn.innerHTML = '🗑️';
+        deleteBtn.className = 'btn-icon-only btn-danger';
+        deleteBtn.title = 'Delete Tracking';
+        deleteBtn.onclick = function(e) {
+            e.stopPropagation();
+            self.deleteTracking(tracking.awb, tracking.carrier);
+        };
+        actionsCell.appendChild(deleteBtn);
+
         row.appendChild(actionsCell);
 
         // Row click: only switch detail if panel already open
@@ -912,7 +952,7 @@
         deleteBtn.innerHTML = '<span class="btn-icon">🗑️</span><span class="btn-text">Delete</span>';
         deleteBtn.onclick = function(e) {
             e.stopPropagation();
-            self.deleteTracking(tracking.awb);
+            self.deleteTracking(tracking.awb, tracking.carrier);
         };
         actions.appendChild(deleteBtn);
 
@@ -1165,7 +1205,7 @@
             // Setup delete button
             var self = this;
             document.getElementById('deleteTrackingBtn').onclick = function() {
-                self.deleteTracking(awb);
+                self.deleteTracking(awb, tracking.carrier);
             };
 
             // Setup force refresh button
@@ -1331,6 +1371,13 @@
         if (!this.settings.queryEngine.enableForceRefresh) {
             this.showToast('⚠️ Force refresh is disabled. Enable in Settings first.', 'warning');
             return;
+        }
+
+        // Ask for confirmation unless skipRefreshConfirmation is enabled
+        if (!this.settings.queryEngine.skipRefreshConfirmation) {
+            if (!confirm('Force refresh ' + awb + '? This will use an API call and may count against rate limits.')) {
+                return;
+            }
         }
 
         try {
