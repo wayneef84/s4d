@@ -809,8 +809,7 @@
             trackBtn.href = trackingURL;
             trackBtn.target = '_blank';
             trackBtn.rel = 'noopener noreferrer';
-            // Mobile: "Track on", Desktop: "Track on {Carrier}"
-            trackBtn.textContent = window.innerWidth < 768 ? '🔗 Track on' : '🔗 Track on ' + tracking.carrier;
+            trackBtn.innerHTML = '<span class="btn-icon">🔗</span><span class="btn-text">Track on</span>';
             trackBtn.style.textDecoration = 'none';
             trackBtn.onclick = function(e) {
                 e.stopPropagation();
@@ -820,7 +819,7 @@
 
         var viewBtn = document.createElement('button');
         viewBtn.className = 'btn-secondary';
-        viewBtn.textContent = '📋 Details';
+        viewBtn.innerHTML = '<span class="btn-icon">📋</span><span class="btn-text">Details</span>';
         viewBtn.onclick = function(e) {
             e.stopPropagation();
             self.showDetail(tracking.awb);
@@ -829,7 +828,7 @@
 
         var deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn-danger';
-        deleteBtn.textContent = '🗑️ Delete';
+        deleteBtn.innerHTML = '<span class="btn-icon">🗑️</span><span class="btn-text">Delete</span>';
         deleteBtn.onclick = function(e) {
             e.stopPropagation();
             self.deleteTracking(tracking.awb);

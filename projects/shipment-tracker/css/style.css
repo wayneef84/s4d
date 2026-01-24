@@ -1238,16 +1238,42 @@ kbd {
     border-top: 1px solid var(--border-color);
 }
 
-.card-actions .btn-secondary {
+.card-actions button,
+.card-actions a {
     flex: 1;
     font-size: 0.85rem;
     padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
 }
 
-.card-actions .btn-danger {
-    flex: 1;
-    font-size: 0.85rem;
-    padding: 0.5rem;
+.card-actions .btn-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.card-actions .btn-text {
+    display: inline;
+}
+
+/* Mobile: Hide button text, show only icons centered */
+@media (max-width: 767px) {
+    .card-actions .btn-text {
+        display: none;
+    }
+
+    .card-actions button,
+    .card-actions a {
+        padding: 0.75rem;
+        min-width: 48px;
+        min-height: 48px;
+    }
+
+    .card-actions .btn-icon {
+        font-size: 1.5rem;
+    }
 }
 
 /* ============================================================
