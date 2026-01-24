@@ -241,6 +241,14 @@
         console.log('[App] Saving settings...');
 
         try {
+            // Ensure apiKeys structure is correct (migration from old format)
+            if (typeof this.settings.apiKeys.FedEx !== 'object' || !this.settings.apiKeys.FedEx) {
+                this.settings.apiKeys.FedEx = { clientId: '', clientSecret: '' };
+            }
+            if (typeof this.settings.apiKeys.UPS !== 'object' || !this.settings.apiKeys.UPS) {
+                this.settings.apiKeys.UPS = { apiKey: '', username: '' };
+            }
+
             // Get values from form
             this.settings.apiKeys.DHL = document.getElementById('dhlApiKey').value;
             this.settings.apiKeys.FedEx.clientId = document.getElementById('fedexClientId').value;
@@ -270,6 +278,14 @@
     };
 
     ShipmentTrackerApp.prototype.populateAPIKeyFields = function() {
+        // Ensure apiKeys structure is correct (migration from old format)
+        if (typeof this.settings.apiKeys.FedEx !== 'object' || !this.settings.apiKeys.FedEx) {
+            this.settings.apiKeys.FedEx = { clientId: '', clientSecret: '' };
+        }
+        if (typeof this.settings.apiKeys.UPS !== 'object' || !this.settings.apiKeys.UPS) {
+            this.settings.apiKeys.UPS = { apiKey: '', username: '' };
+        }
+
         document.getElementById('dhlApiKey').value = this.settings.apiKeys.DHL || '';
         document.getElementById('fedexClientId').value = this.settings.apiKeys.FedEx.clientId || '';
         document.getElementById('fedexClientSecret').value = this.settings.apiKeys.FedEx.clientSecret || '';
