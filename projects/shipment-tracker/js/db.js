@@ -193,11 +193,13 @@
 
             // Special migration for version 3: recreate trackings store with new keyPath
             if (storeName === 'trackings' && oldVersion < 3 && db.objectStoreNames.contains(storeName)) {
-                console.log('[IndexedDB] Migrating trackings store to use trackingId keyPath...');
+                console.log('[IndexedDB] Migrating trackings store - reading old data...');
 
-                // Get old data
+                // FIRST: Read all data from old store before deleting it
                 var oldStore = transaction.objectStore(storeName);
-                var oldData = [];
+                var oldRecords = [];
+
+                // Use openCursor synchronously within the upgrade transaction
                 var cursorRequest = oldStore.openCursor();
 
                 cursorRequest.onsuccess = function(e) {
@@ -208,36 +210,39 @@
                         if (!record.trackingId && record.awb && record.carrier) {
                             record.trackingId = record.awb + '_' + record.carrier;
                         }
-                        oldData.push(record);
+                        oldRecords.push(record);
                         cursor.continue();
+                    } else {
+                        // Cursor finished - now we can delete and recreate
+                        console.log('[IndexedDB] Read', oldRecords.length, 'records, now deleting old store');
+
+                        db.deleteObjectStore('trackings');
+                        console.log('[IndexedDB] Deleted old trackings store');
+
+                        // Create new store
+                        var newStore = db.createObjectStore('trackings', {
+                            keyPath: storeConfig.keyPath,
+                            autoIncrement: storeConfig.autoIncrement
+                        });
+                        console.log('[IndexedDB] Created new trackings store with keyPath:', storeConfig.keyPath);
+
+                        // Add indexes
+                        for (var m = 0; m < storeConfig.indexes.length; m++) {
+                            var idx = storeConfig.indexes[m];
+                            newStore.createIndex(idx.name, idx.keyPath, { unique: idx.unique });
+                            console.log('[IndexedDB] Created index:', idx.name);
+                        }
+
+                        // Re-add all records
+                        for (var n = 0; n < oldRecords.length; n++) {
+                            newStore.put(oldRecords[n]);
+                        }
+                        console.log('[IndexedDB] Migration complete -re-added', oldRecords.length, 'records');
                     }
                 };
 
-                // Delete old store
-                db.deleteObjectStore(storeName);
-                console.log('[IndexedDB] Deleted old trackings store');
-
-                // Create new store with trackingId keyPath
-                objectStore = db.createObjectStore(storeName, {
-                    keyPath: storeConfig.keyPath,
-                    autoIncrement: storeConfig.autoIncrement
-                });
-                console.log('[IndexedDB] Created new trackings store with keyPath:', storeConfig.keyPath);
-
-                // Re-add data after transaction completes
-                transaction.oncomplete = function() {
-                    console.log('[IndexedDB] Re-adding', oldData.length, 'records to new store');
-                    var newTransaction = db.transaction([storeName], 'readwrite');
-                    var newStore = newTransaction.objectStore(storeName);
-
-                    for (var k = 0; k < oldData.length; k++) {
-                        newStore.put(oldData[k]);
-                    }
-
-                    newTransaction.oncomplete = function() {
-                        console.log('[IndexedDB] Migration complete');
-                    };
-                };
+                // Skip normal processing for this store
+                continue;
             } else if (!db.objectStoreNames.contains(storeName)) {
                 // Create store if it doesn't exist
                 console.log('[IndexedDB] Creating object store:', storeName);
