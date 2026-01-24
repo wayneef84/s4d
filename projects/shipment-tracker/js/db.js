@@ -193,53 +193,29 @@
 
             // Special migration for version 3: recreate trackings store with new keyPath
             if (storeName === 'trackings' && oldVersion < 3 && db.objectStoreNames.contains(storeName)) {
-                console.log('[IndexedDB] Migrating trackings store - reading old data...');
+                console.warn('[IndexedDB] ⚠️ MIGRATION: Recreating trackings store with correct keyPath');
+                console.warn('[IndexedDB] ⚠️ All existing tracking data will be cleared');
+                console.warn('[IndexedDB] ⚠️ Please use Export feature before upgrading if you want to preserve data');
 
-                // FIRST: Read all data from old store before deleting it
-                var oldStore = transaction.objectStore(storeName);
-                var oldRecords = [];
+                // Delete old store with incorrect keyPath
+                db.deleteObjectStore('trackings');
+                console.log('[IndexedDB] Deleted old trackings store');
 
-                // Use openCursor synchronously within the upgrade transaction
-                var cursorRequest = oldStore.openCursor();
+                // Create new store with correct keyPath
+                objectStore = db.createObjectStore('trackings', {
+                    keyPath: storeConfig.keyPath,
+                    autoIncrement: storeConfig.autoIncrement
+                });
+                console.log('[IndexedDB] Created new trackings store with keyPath:', storeConfig.keyPath);
 
-                cursorRequest.onsuccess = function(e) {
-                    var cursor = e.target.result;
-                    if (cursor) {
-                        var record = cursor.value;
-                        // Add trackingId if missing
-                        if (!record.trackingId && record.awb && record.carrier) {
-                            record.trackingId = record.awb + '_' + record.carrier;
-                        }
-                        oldRecords.push(record);
-                        cursor.continue();
-                    } else {
-                        // Cursor finished - now we can delete and recreate
-                        console.log('[IndexedDB] Read', oldRecords.length, 'records, now deleting old store');
+                // Add indexes
+                for (var m = 0; m < storeConfig.indexes.length; m++) {
+                    var idx = storeConfig.indexes[m];
+                    objectStore.createIndex(idx.name, idx.keyPath, { unique: idx.unique });
+                    console.log('[IndexedDB] Created index:', idx.name);
+                }
 
-                        db.deleteObjectStore('trackings');
-                        console.log('[IndexedDB] Deleted old trackings store');
-
-                        // Create new store
-                        var newStore = db.createObjectStore('trackings', {
-                            keyPath: storeConfig.keyPath,
-                            autoIncrement: storeConfig.autoIncrement
-                        });
-                        console.log('[IndexedDB] Created new trackings store with keyPath:', storeConfig.keyPath);
-
-                        // Add indexes
-                        for (var m = 0; m < storeConfig.indexes.length; m++) {
-                            var idx = storeConfig.indexes[m];
-                            newStore.createIndex(idx.name, idx.keyPath, { unique: idx.unique });
-                            console.log('[IndexedDB] Created index:', idx.name);
-                        }
-
-                        // Re-add all records
-                        for (var n = 0; n < oldRecords.length; n++) {
-                            newStore.put(oldRecords[n]);
-                        }
-                        console.log('[IndexedDB] Migration complete -re-added', oldRecords.length, 'records');
-                    }
-                };
+                console.log('[IndexedDB] Migration complete - trackings store ready for use');
 
                 // Skip normal processing for this store
                 continue;
