@@ -351,6 +351,7 @@
 
                 transaction.oncomplete = function() {
                     console.log('[IndexedDB] Delete transaction completed successfully');
+                    resolve();
                 };
 
                 transaction.onerror = function(event) {
@@ -361,8 +362,7 @@
                 var request = store.delete(trackingId);
 
                 request.onsuccess = function(event) {
-                    console.log('[IndexedDB] Successfully deleted tracking:', trackingId);
-                    resolve();
+                    console.log('[IndexedDB] Delete request succeeded for:', trackingId);
                 };
 
                 request.onerror = function(event) {
@@ -383,11 +383,21 @@
 
                     var transaction = self.db.transaction(['trackings'], 'readwrite');
                     var store = transaction.objectStore('trackings');
+
+                    transaction.oncomplete = function() {
+                        console.log('[IndexedDB] Delete transaction completed for:', tracking.trackingId);
+                        resolve();
+                    };
+
+                    transaction.onerror = function(event) {
+                        console.error('[IndexedDB] Delete transaction error:', event.target.error);
+                        reject(event.target.error);
+                    };
+
                     var request = store.delete(tracking.trackingId);
 
                     request.onsuccess = function(event) {
-                        console.log('[IndexedDB] Deleted tracking:', tracking.trackingId);
-                        resolve();
+                        console.log('[IndexedDB] Delete request succeeded for:', tracking.trackingId);
                     };
 
                     request.onerror = function(event) {
