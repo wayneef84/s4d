@@ -450,6 +450,7 @@
 
                 if (cursor) {
                     var record = cursor.value;
+                    console.log('[IndexedDB] getAllTrackings cursor found record:', record.trackingId);
                     var matches = true;
 
                     // Apply filters
@@ -467,6 +468,7 @@
                     }
 
                     if (matches) {
+                        console.log('[IndexedDB] Record matches filters, adding to results');
                         results.push(record);
                     }
 
@@ -474,6 +476,7 @@
                 } else {
                     // Done iterating
                     console.log('[IndexedDB] Retrieved', results.length, 'tracking records');
+                    console.log('[IndexedDB] Record IDs:', results.map(function(r) { return r.trackingId; }));
                     resolve(results);
                 }
             };
