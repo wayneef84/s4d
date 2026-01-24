@@ -37,37 +37,42 @@
             <div class="settings-content">
 
             <div class="settings-section">
-                <h3>API Keys</h3>
-                <p class="help-text">Enter your carrier API credentials. Keys are stored locally in your browser.</p>
+                <h3 class="collapsible-header" data-target="apiKeysContent">
+                    <span class="expand-icon">▶</span> API Keys
+                </h3>
 
-                <label for="dhlApiKey">
-                    <span>DHL API Key:</span>
-                    <input type="password" id="dhlApiKey" placeholder="Enter DHL API key">
-                    <button type="button" class="toggle-visibility" data-target="dhlApiKey">👁️</button>
-                </label>
+                <div id="apiKeysContent" class="collapsible-content" style="display: none;">
+                    <p class="help-text">Enter your carrier API credentials. Keys are stored locally in your browser.</p>
 
-                <label for="fedexClientId">
-                    <span>FedEx Client ID:</span>
-                    <input type="password" id="fedexClientId" placeholder="Enter FedEx client ID">
-                    <button type="button" class="toggle-visibility" data-target="fedexClientId">👁️</button>
-                </label>
+                    <label for="dhlApiKey">
+                        <span>DHL API Key:</span>
+                        <input type="password" id="dhlApiKey" placeholder="Enter DHL API key">
+                        <button type="button" class="toggle-visibility" data-target="dhlApiKey">👁️</button>
+                    </label>
 
-                <label for="fedexClientSecret">
-                    <span>FedEx Client Secret:</span>
-                    <input type="password" id="fedexClientSecret" placeholder="Enter FedEx client secret">
-                    <button type="button" class="toggle-visibility" data-target="fedexClientSecret">👁️</button>
-                </label>
+                    <label for="fedexClientId">
+                        <span>FedEx Client ID:</span>
+                        <input type="password" id="fedexClientId" placeholder="Enter FedEx client ID">
+                        <button type="button" class="toggle-visibility" data-target="fedexClientId">👁️</button>
+                    </label>
 
-                <label for="upsApiKey">
-                    <span>UPS API Key:</span>
-                    <input type="password" id="upsApiKey" placeholder="Enter UPS API key">
-                    <button type="button" class="toggle-visibility" data-target="upsApiKey">👁️</button>
-                </label>
+                    <label for="fedexClientSecret">
+                        <span>FedEx Client Secret:</span>
+                        <input type="password" id="fedexClientSecret" placeholder="Enter FedEx client secret">
+                        <button type="button" class="toggle-visibility" data-target="fedexClientSecret">👁️</button>
+                    </label>
 
-                <label for="upsUsername">
-                    <span>UPS Username:</span>
-                    <input type="text" id="upsUsername" placeholder="Enter UPS username">
-                </label>
+                    <label for="upsApiKey">
+                        <span>UPS API Key:</span>
+                        <input type="password" id="upsApiKey" placeholder="Enter UPS API key">
+                        <button type="button" class="toggle-visibility" data-target="upsApiKey">👁️</button>
+                    </label>
+
+                    <label for="upsUsername">
+                        <span>UPS Username:</span>
+                        <input type="text" id="upsUsername" placeholder="Enter UPS username">
+                    </label>
+                </div>
             </div>
 
             <div class="settings-section">
@@ -123,6 +128,18 @@
 
                 <p class="help-text" style="margin-top: 0.5rem; font-size: 0.875rem;">
                     Keyboard shortcut: <kbd>Ctrl+Shift+D</kbd> (or <kbd>Cmd+Shift+D</kbd> on Mac)
+                </p>
+            </div>
+
+            <div class="settings-group">
+                <h3>Import / Export</h3>
+
+                <button id="downloadTemplateBtn" class="btn-secondary" style="width: 100%;">
+                    📄 Download Import Template (CSV)
+                </button>
+
+                <p class="help-text" style="margin-top: 0.5rem; font-size: 0.875rem;">
+                    Download a CSV template showing the required format for bulk importing tracking numbers.
                 </p>
             </div>
 

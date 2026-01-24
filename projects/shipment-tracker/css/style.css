@@ -247,6 +247,36 @@ textarea,
     font-weight: 600;
 }
 
+/* Collapsible headers */
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    transition: color 0.2s;
+}
+
+.collapsible-header:hover {
+    color: var(--primary-color);
+}
+
+.collapsible-header .expand-icon {
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+    display: inline-block;
+}
+
+.collapsible-header.expanded .expand-icon {
+    transform: rotate(90deg);
+}
+
+.collapsible-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
 .help-text {
     font-size: 0.85rem;
     color: var(--text-secondary);

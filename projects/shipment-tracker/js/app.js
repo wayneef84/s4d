@@ -1344,6 +1344,188 @@
         this.showToast('Downloaded payload for ' + tracking.awb, 'success');
     };
 
+    ShipmentTrackerApp.prototype.downloadImportTemplate = function() {
+        var csv = 'AWB,Carrier,Date Shipped (Optional)\n';
+        csv += '# Example rows:\n';
+        csv += '1234567890,DHL,2026-01-15\n';
+        csv += '111111111111,FedEx,2026-01-20\n';
+        csv += '1Z999AA10123456784,UPS,\n';
+        csv += '420123459400110200000000000000,USPS,2026-01-22\n';
+        csv += '\n';
+        csv += '# Instructions:\n';
+        csv += '# - First row must be the header (AWB,Carrier,Date Shipped)\n';
+        csv += '# - Lines starting with # are comments and will be ignored\n';
+        csv += '# - Carrier must be one of: DHL, FedEx, UPS, USPS\n';
+        csv += '# - Date Shipped is optional (format: YYYY-MM-DD)\n';
+        csv += '# - Remove example rows and add your tracking numbers below\n';
+
+        var filename = 'shipment_tracker_import_template.csv';
+        this.downloadFile(csv, filename, 'text/csv');
+        this.showToast('📄 Download template - add your tracking numbers and import', 'success');
+    };
+
+    ShipmentTrackerApp.prototype.handleImportFile = async function(file) {
+        var self = this;
+
+        if (!file) {
+            this.showToast('No file selected', 'error');
+            return;
+        }
+
+        var extension = file.name.split('.').pop().toLowerCase();
+
+        if (extension === 'csv') {
+            await this.importFromCSV(file);
+        } else if (extension === 'json') {
+            await this.importFromJSON(file);
+        } else {
+            this.showToast('Unsupported file format. Use CSV or JSON.', 'error');
+        }
+    };
+
+    ShipmentTrackerApp.prototype.importFromCSV = async function(file) {
+        var self = this;
+
+        try {
+            var text = await this.readFileAsText(file);
+            var lines = text.split('\n');
+
+            var imported = 0;
+            var skipped = 0;
+            var errors = [];
+
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+
+                // Skip empty lines, comments, and header
+                if (!line || line.startsWith('#') || line.toLowerCase().startsWith('awb,')) {
+                    continue;
+                }
+
+                var parts = line.split(',');
+                if (parts.length < 2) {
+                    errors.push('Line ' + (i + 1) + ': Invalid format (need at least AWB,Carrier)');
+                    continue;
+                }
+
+                var awb = parts[0].trim();
+                var carrier = parts[1].trim();
+                var dateShipped = parts[2] ? parts[2].trim() : '';
+
+                // Validate carrier
+                if (!['DHL', 'FedEx', 'UPS', 'USPS'].includes(carrier)) {
+                    errors.push('Line ' + (i + 1) + ': Invalid carrier "' + carrier + '" (must be DHL, FedEx, UPS, or USPS)');
+                    continue;
+                }
+
+                // Check if already exists
+                var existing = await this.db.getTracking(awb, carrier);
+                if (existing) {
+                    skipped++;
+                    continue;
+                }
+
+                // Add tracking
+                try {
+                    await this.addTracking(awb, carrier, dateShipped);
+                    imported++;
+                } catch (err) {
+                    errors.push('Line ' + (i + 1) + ': ' + err.message);
+                }
+            }
+
+            // Show summary
+            var summary = '✅ Imported ' + imported + ' tracking(s)';
+            if (skipped > 0) {
+                summary += ' (' + skipped + ' skipped - already exist)';
+            }
+            if (errors.length > 0) {
+                summary += '\n\n⚠️ Errors:\n' + errors.slice(0, 5).join('\n');
+                if (errors.length > 5) {
+                    summary += '\n... and ' + (errors.length - 5) + ' more errors';
+                }
+            }
+
+            this.showToast(summary, imported > 0 ? 'success' : 'warning');
+
+            // Reload trackings
+            if (imported > 0) {
+                await this.loadTrackings();
+                this.updateStats();
+            }
+
+        } catch (err) {
+            console.error('[App] Import failed:', err);
+            this.showToast('Import failed: ' + err.message, 'error');
+        }
+    };
+
+    ShipmentTrackerApp.prototype.importFromJSON = async function(file) {
+        var self = this;
+
+        try {
+            var text = await this.readFileAsText(file);
+            var data = JSON.parse(text);
+
+            if (!Array.isArray(data)) {
+                this.showToast('JSON must be an array of tracking objects', 'error');
+                return;
+            }
+
+            var imported = 0;
+            var skipped = 0;
+
+            for (var i = 0; i < data.length; i++) {
+                var tracking = data[i];
+
+                if (!tracking.awb || !tracking.carrier) {
+                    continue;
+                }
+
+                // Check if already exists
+                var existing = await this.db.getTracking(tracking.awb, tracking.carrier);
+                if (existing) {
+                    skipped++;
+                    continue;
+                }
+
+                // Save to database
+                await this.db.saveTracking(tracking);
+                imported++;
+            }
+
+            var summary = '✅ Imported ' + imported + ' tracking(s)';
+            if (skipped > 0) {
+                summary += ' (' + skipped + ' skipped - already exist)';
+            }
+
+            this.showToast(summary, 'success');
+
+            // Reload trackings
+            if (imported > 0) {
+                await this.loadTrackings();
+                this.updateStats();
+            }
+
+        } catch (err) {
+            console.error('[App] Import failed:', err);
+            this.showToast('Import failed: ' + err.message, 'error');
+        }
+    };
+
+    ShipmentTrackerApp.prototype.readFileAsText = function(file) {
+        return new Promise(function(resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                resolve(e.target.result);
+            };
+            reader.onerror = function(e) {
+                reject(new Error('Failed to read file'));
+            };
+            reader.readAsText(file);
+        });
+    };
+
     ShipmentTrackerApp.prototype.refreshAllTrackings = async function() {
         console.log('[App] Refreshing all trackings');
 
@@ -2044,12 +2226,37 @@
             self.clearAllData();
         };
 
+        // Download import template button
+        var downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+        if (downloadTemplateBtn) {
+            downloadTemplateBtn.onclick = function() {
+                self.downloadImportTemplate();
+            };
+        }
+
         // Debug menu button in settings
         var openDebugMenuBtn = document.getElementById('openDebugMenuBtn');
         if (openDebugMenuBtn) {
             openDebugMenuBtn.onclick = function() {
                 if (window.DebugMenu) {
                     window.DebugMenu.open();
+                }
+            };
+        }
+
+        // Collapsible sections in settings
+        var collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+        for (var i = 0; i < collapsibleHeaders.length; i++) {
+            collapsibleHeaders[i].onclick = function() {
+                var targetId = this.getAttribute('data-target');
+                var content = document.getElementById(targetId);
+
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    this.classList.add('expanded');
+                } else {
+                    content.style.display = 'none';
+                    this.classList.remove('expanded');
                 }
             };
         }
@@ -2061,7 +2268,7 @@
                     '⚠️ Enable Force Refresh?\n\n' +
                     'Force refresh will ignore the cooldown period and query the carrier API immediately.\n\n' +
                     'WARNING: This will use more API calls and may hit your daily rate limit faster.\n\n' +
-                    'Recommended: Keep this OFF and use the 10-minute cooldown.\n\n' +
+                    'Recommended: Keep this OFF and use the 12-hour cooldown.\n\n' +
                     'Enable anyway?'
                 );
 
@@ -2109,7 +2316,12 @@
         };
 
         document.getElementById('importFile').onchange = function(e) {
-            self.showToast('Import not yet implemented', 'info');
+            var file = e.target.files[0];
+            if (file) {
+                self.handleImportFile(file);
+            }
+            // Reset file input so same file can be imported again
+            e.target.value = '';
             e.target.value = '';
         };
 
