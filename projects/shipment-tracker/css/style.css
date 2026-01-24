@@ -1306,7 +1306,7 @@ kbd {
 
     /* Add padding to mobile cards container to account for bottom bar */
     .mobile-cards-container {
-        padding: 1rem 1rem 0px 1rem;
+        padding: 1rem 1rem 200px 1rem;
     }
 
     /* Hide filter bar on mobile by default */
