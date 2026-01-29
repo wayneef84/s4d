@@ -16,9 +16,13 @@ This repository contains two types of projects:
 
 ### 🛠️ Utility Projects (`/projects/`)
 Non-game applications and tools:
-- **Shipment Tracker** (v1.1.0): Multi-carrier shipment tracking with IndexedDB storage, mobile-first card layout, AWB truncation, duplicate detection, and export capabilities (DHL, FedEx, UPS).
+- **Shipment Tracker** (v1.2.0): Multi-carrier shipment tracking with IndexedDB storage, mobile-first card layout, AWB truncation, duplicate detection, and export capabilities (DHL, FedEx, UPS).
   - **Documentation:** `projects/shipment-tracker/ARCHITECTURE.md` (comprehensive guide)
-  - **Current Priority:** Mobile UX overhaul (Priority 0 from TODO.md)
+  - **🚨 TOP PRIORITY:** Import/Export overhaul with document support - see `projects/shipment-tracker/PLAN-import-export.md`
+    - Move Docs column to Actions button with modal
+    - CSV/JSON export with documents
+    - CSV/JSON import with update/replace modes
+    - Custom carrier support
 
 **Key Distinction:**
 - `/games/` = Entertainment, interactive experiences
