@@ -1,0 +1,119 @@
+{
+  "categories": [
+    {
+      "id": "family",
+      "name": "Family",
+      "icon": "👨‍👩‍👧",
+      "words": [
+        { "word": "Kenzie", "emoji": "👧" },
+        { "word": "Jennie", "emoji": "👩" },
+        { "word": "Wayne", "emoji": "👨" },
+        { "word": "Mom", "emoji": "👩" },
+        { "word": "Dad", "emoji": "👨" },
+        { "word": "Tammy", "emoji": "✨" },
+        { "word": "Phong", "emoji": "✨" },
+        { "word": "Justin", "emoji": "✨" },
+        { "word": "Linda", "emoji": "✨" },
+        { "word": "Ed", "emoji": "✨" },
+        { "word": "Toijee", "emoji": "✨" },
+        { "word": "Wing", "emoji": "✨" },
+        { "word": "Gina", "emoji": "✨" },
+        { "word": "Jinwoo", "emoji": "✨" },
+        { "word": "Oliver", "emoji": "👦" },
+        { "word": "Gemma", "emoji": "👧" }
+      ]
+    },
+    {
+      "id": "animals",
+      "name": "Animals",
+      "icon": "🐾",
+      "words": [
+        { "word": "Cat", "emoji": "🐱" },
+        { "word": "Dog", "emoji": "🐕" },
+        { "word": "Butterfly", "emoji": "🦋" },
+        { "word": "Giraffe", "emoji": "🦒" },
+        { "word": "Elephant", "emoji": "🐘" },
+        { "word": "Unicorn", "emoji": "🦄" },
+        { "word": "Bear", "emoji": "🐻" },
+        { "word": "Lion", "emoji": "🦁" },
+        { "word": "Tiger", "emoji": "🐯" },
+        { "word": "Bunny", "emoji": "🐰" },
+        { "word": "Frog", "emoji": "🐸" },
+        { "word": "Fish", "emoji": "🐟" },
+        { "word": "Pig", "emoji": "🐷" },
+        { "word": "Monkey", "emoji": "🐵" },
+        { "word": "Zebra", "emoji": "🦓" },
+        { "word": "Penguin", "emoji": "🐧" }
+      ]
+    },
+    {
+      "id": "shapes",
+      "name": "Shapes",
+      "icon": "🔷",
+      "words": [
+        { "word": "Circle", "emoji": "⭕" },
+        { "word": "Square", "emoji": "🟥" },
+        { "word": "Triangle", "emoji": "🔺" },
+        { "word": "Star", "emoji": "⭐" },
+        { "word": "Heart", "emoji": "❤️" },
+        { "word": "Diamond", "emoji": "💎" },
+        { "word": "Oval", "emoji": "🥚" },
+        { "word": "Rectangle", "emoji": "🟩" }
+      ]
+    },
+    {
+      "id": "greetings",
+      "name": "Greetings",
+      "icon": "👋",
+      "words": [
+        { "word": "Hi", "emoji": "👋" },
+        { "word": "Bye", "emoji": "👋" },
+        { "word": "Hello", "emoji": "👋" },
+        { "word": "Love", "emoji": "❤️" },
+        { "word": "Yes", "emoji": "✅" },
+        { "word": "No", "emoji": "❌" },
+        { "word": "Please", "emoji": "🙏" },
+        { "word": "Thanks", "emoji": "🙏" },
+        { "word": "Sorry", "emoji": "😔" },
+        { "word": "Help", "emoji": "🆘" }
+      ]
+    },
+    {
+      "id": "nature",
+      "name": "Nature",
+      "icon": "🌈",
+      "words": [
+        { "word": "Rainbow", "emoji": "🌈" },
+        { "word": "Sun", "emoji": "☀️" },
+        { "word": "Moon", "emoji": "🌙" },
+        { "word": "Star", "emoji": "⭐" },
+        { "word": "Tree", "emoji": "🌳" },
+        { "word": "Flower", "emoji": "🌸" },
+        { "word": "Cloud", "emoji": "☁️" },
+        { "word": "Rain", "emoji": "🌧️" },
+        { "word": "Snow", "emoji": "❄️" },
+        { "word": "Ocean", "emoji": "🌊" },
+        { "word": "Leaf", "emoji": "🍃" },
+        { "word": "Sky", "emoji": "🌤️" }
+      ]
+    },
+    {
+      "id": "food",
+      "name": "Food",
+      "icon": "🍎",
+      "words": [
+        { "word": "Apple", "emoji": "🍎" },
+        { "word": "Banana", "emoji": "🍌" },
+        { "word": "Pizza", "emoji": "🍕" },
+        { "word": "Cake", "emoji": "🎂" },
+        { "word": "Cookie", "emoji": "🍪" },
+        { "word": "Ice Cream", "emoji": "🍦" },
+        { "word": "Grape", "emoji": "🍇" },
+        { "word": "Orange", "emoji": "🍊" },
+        { "word": "Bread", "emoji": "🍞" },
+        { "word": "Egg", "emoji": "🥚" }
+      ]
+    }
+  ],
+  "defaultCategory": "family"
+}

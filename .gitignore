@@ -7,6 +7,7 @@ CONTINUATION_NOTES.md
 
 # OS Files
 .DS_Store
+**/.DS_Store
 
 # IDE
 .vscode/

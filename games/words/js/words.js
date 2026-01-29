@@ -25,23 +25,30 @@ class WordGame {
         this.cancelBtn = document.getElementById('cancel-add');
         this.saveBtn = document.getElementById('confirm-add');
 
+        // Category Selector
+        this.categorySelectorEl = document.getElementById('category-selector');
+
         // State
         this.currentWord = "";
         this.letterIndex = 0;
-        
+
         this.strokes = [];
         this.strokeProgress = [];
         this.strokeDone = [];
         this.isDrawing = false;
         this.lastPos = null;
         this.particles = [];
-        
+
         this.guidanceMode = 'ghost_plus';
         this.ghostT = 0;
         this.voiceRate = 0.9;
 
-        // Data - UPDATED HERE
-        this.defaultWords = ["Kenzie", "Jennie", "Wayne", "Mom", "Dad", "Tammy", "Phong", "Justin", "Linda", "Ed", "Toijee", "Wing", "Gina", "Jinwoo", "Oliver", "Gemma", "Cat", "Dog", "Love", "Hi", "Bye", "Butterfly", "Giraffe", "Elephant", "Rainbow", "Unicorn"];
+        // Data - Now loaded from JSON
+        this.wordData = null;           // Loaded JSON data
+        this.currentCategory = null;    // Active category object
+        this.categoryId = 'family';     // Default category ID
+        this.emojiMap = {};             // Dynamic emoji mapping
+        this.defaultWords = [];         // Words from current category
         this.customWords = [];
         this.globalAudio = {};
 
@@ -49,31 +56,96 @@ class WordGame {
     }
 
     init() {
+        var self = this;
+
         // 1. Load Global Audio
         if (window.GAME_CONTENT && window.GAME_CONTENT.globalAudio) {
             this.globalAudio = window.GAME_CONTENT.globalAudio;
         }
 
         // 2. Load Custom Words from Storage
-        const saved = localStorage.getItem('fong_custom_words');
+        var saved = localStorage.getItem('fong_custom_words');
         if (saved) {
             try {
                 this.customWords = JSON.parse(saved);
             } catch(e) { console.error("Save data corrupted", e); }
         }
 
-        // 3. Check URL parameters
+        // 3. Load saved category preference
+        var savedCategory = localStorage.getItem('fong_word_category');
+        if (savedCategory) {
+            this.categoryId = savedCategory;
+        }
+
+        // 4. Check URL parameters
         var params = this.parseURLParams();
 
-        // 4. Setup
-        this.renderMenu();
+        // 5. Setup events and animation loop
         this.setupEvents();
-        requestAnimationFrame(() => this.loop());
+        requestAnimationFrame(function() { self.loop(); });
 
-        // 5. Load word from URL if provided
-        if (params.word) {
-            this.loadFromURL(params);
+        // 6. Load word data from JSON
+        fetch('data/word_list.json')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                self.wordData = data;
+                // Use saved category or default from JSON
+                if (!savedCategory && data.defaultCategory) {
+                    self.categoryId = data.defaultCategory;
+                }
+                self.loadCategory(self.categoryId);
+                self.renderMenu();
+
+                // 7. Load word from URL if provided (after data is loaded)
+                if (params.word) {
+                    self.loadFromURL(params);
+                }
+            })
+            .catch(function(err) {
+                console.error("Failed to load word_list.json:", err);
+                // Fallback to hardcoded words if JSON fails
+                self.defaultWords = ["Kenzie", "Jennie", "Wayne", "Mom", "Dad", "Cat", "Dog"];
+                self.emojiMap = { "Kenzie": "👧", "Jennie": "👩", "Wayne": "👨", "Mom": "👩", "Dad": "👨", "Cat": "🐱", "Dog": "🐕" };
+                self.renderMenu();
+                if (params.word) {
+                    self.loadFromURL(params);
+                }
+            });
+    }
+
+    loadCategory(categoryId) {
+        if (!this.wordData || !this.wordData.categories) return;
+
+        var category = null;
+        for (var i = 0; i < this.wordData.categories.length; i++) {
+            if (this.wordData.categories[i].id === categoryId) {
+                category = this.wordData.categories[i];
+                break;
+            }
         }
+
+        if (!category) {
+            // Fall back to first category
+            category = this.wordData.categories[0];
+        }
+
+        this.currentCategory = category;
+        this.categoryId = category.id;
+
+        // Build word list and emoji map from category
+        this.defaultWords = [];
+        this.emojiMap = {};
+
+        for (var j = 0; j < category.words.length; j++) {
+            var item = category.words[j];
+            this.defaultWords.push(item.word);
+            if (item.emoji) {
+                this.emojiMap[item.word] = item.emoji;
+            }
+        }
+
+        // Save category preference
+        localStorage.setItem('fong_word_category', this.categoryId);
     }
 
     parseURLParams() {
@@ -132,40 +204,84 @@ class WordGame {
 
     // --- MENU SYSTEM ---
     renderMenu() {
+        var self = this;
+
+        // Render category tabs
+        this.renderCategoryTabs();
+
+        // Clear word list
         this.wordListEl.innerHTML = '';
 
-        // 1. Default Words
-        this.defaultWords.forEach(word => {
-            this.createWordCard(word, false);
-        });
+        // 1. Default Words from current category
+        for (var i = 0; i < this.defaultWords.length; i++) {
+            this.createWordCard(this.defaultWords[i], false);
+        }
 
         // 2. Custom Words
-        this.customWords.forEach(word => {
-            this.createWordCard(word, true);
-        });
+        for (var j = 0; j < this.customWords.length; j++) {
+            this.createWordCard(this.customWords[j], true);
+        }
 
         // 3. Add Button
-        const addBtn = document.createElement('div');
+        var addBtn = document.createElement('div');
         addBtn.className = 'word-card add-btn';
         addBtn.textContent = '+';
-        addBtn.onclick = () => this.openModal();
+        addBtn.onclick = function() { self.openModal(); };
         this.wordListEl.appendChild(addBtn);
     }
 
+    renderCategoryTabs() {
+        var self = this;
+        if (!this.categorySelectorEl || !this.wordData) return;
+
+        this.categorySelectorEl.innerHTML = '';
+
+        for (var i = 0; i < this.wordData.categories.length; i++) {
+            var cat = this.wordData.categories[i];
+            var tab = document.createElement('button');
+            tab.className = 'category-tab';
+            if (cat.id === this.categoryId) {
+                tab.className += ' active';
+            }
+            tab.dataset.categoryId = cat.id;
+
+            var iconSpan = document.createElement('span');
+            iconSpan.className = 'category-icon';
+            iconSpan.textContent = cat.icon || '';
+            tab.appendChild(iconSpan);
+
+            var nameSpan = document.createElement('span');
+            nameSpan.textContent = cat.name;
+            tab.appendChild(nameSpan);
+
+            tab.onclick = function(e) {
+                var btn = e.currentTarget;
+                var catId = btn.dataset.categoryId;
+                if (catId !== self.categoryId) {
+                    self.loadCategory(catId);
+                    self.renderMenu();
+                }
+            };
+
+            this.categorySelectorEl.appendChild(tab);
+        }
+    }
+
     createWordCard(word, isCustom) {
-        const btn = document.createElement('div');
+        var self = this;
+        var btn = document.createElement('div');
         btn.className = 'word-card';
         btn.textContent = word;
-        btn.onclick = () => this.startWord(word);
+        btn.onclick = function() { self.startWord(word); };
 
         if (isCustom) {
-            const delBtn = document.createElement('div');
+            var delBtn = document.createElement('div');
             delBtn.className = 'delete-icon';
             delBtn.innerHTML = '×';
             delBtn.title = "Delete Word";
-            delBtn.onclick = (e) => {
+            delBtn.onclick = function(e) {
                 e.stopPropagation(); // Don't start game
-                this.deleteCustomWord(word);
+                self.deleteCustomWord(word);
             };
             btn.appendChild(delBtn);
         }
@@ -322,30 +438,9 @@ class WordGame {
         this.imageArea.classList.remove('hidden');
     }
 
-    // TODO: GET Rid of this for a better option
-
     getEmojiForWord(word) {
-        const emojiMap = {
-            'Kenzie': '👧',
-            'Kenzi': '👧',
-            'Jennie': '👩',
-            'Jenny': '👩',
-            'Wayne': '👨',
-            'Dad': '👨',
-            'Mom': '👩',
-            'Dog': '🐕',
-            'Cat': '🐱',
-            'Butterfly': '🦋',
-            'Giraffe': '🦒',
-            'Elephant': '🐘',
-            'Rainbow': '🌈',
-            'Unicorn': '🦄',
-            'Love': '❤️',
-            'Hi': '👋',
-            'Hello': '👋',
-            'Bye': '👋'
-        };
-        return emojiMap[word] || '✨';
+        // Use dynamic emoji map loaded from JSON
+        return this.emojiMap[word] || '✨';
     }
 
     backToMenu() {
@@ -636,21 +731,33 @@ class WordGame {
         this.draw();
     }
     toPixels(pt) {
-        const w = this.canvas.width; const h = this.canvas.height;
-        const aspectRatio = 0.8; 
-        const padding = 20;
-        const availW = w - (padding * 2);
-        
-        let boxW = availW;
-        let boxH = boxW / aspectRatio;
-        
+        var w = this.canvas.width;
+        var h = this.canvas.height;
+        var aspectRatio = 0.8;
+        var padding = 20;
+        var availW = w - (padding * 2);
+
+        var boxW = availW;
+        var boxH = boxW / aspectRatio;
+
         if (boxH > h - 40) {
             boxH = h - 40;
             boxW = boxH * aspectRatio;
         }
-        const offsetX = (w - boxW) / 2;
-        const offsetY = (h - boxH) / 2;
-        return { x: offsetX + (pt.x / 100) * boxW, y: offsetY + (pt.y / 100) * boxH };
+
+        // Account for descenders (y, g, p, q, j go below baseline)
+        // Map y range from -10 to 120 (130 units total) instead of 0-100
+        var yMin = -10;
+        var yMax = 120;
+        var yRange = yMax - yMin; // 130
+
+        var offsetX = (w - boxW) / 2;
+        var offsetY = (h - boxH) / 2;
+
+        return {
+            x: offsetX + (pt.x / 100) * boxW,
+            y: offsetY + ((pt.y - yMin) / yRange) * boxH
+        };
     }
     getPos(e) { const rect = this.canvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
 
