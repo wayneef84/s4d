@@ -271,8 +271,22 @@ class WordGame {
         var self = this;
         var btn = document.createElement('div');
         btn.className = 'word-card';
-        btn.textContent = word;
         btn.onclick = function() { self.startWord(word); };
+
+        // Add emoji icon on top for non-custom words
+        if (!isCustom) {
+            var emoji = this.getEmojiForWord(word);
+            var iconEl = document.createElement('div');
+            iconEl.className = 'word-card-icon';
+            iconEl.textContent = emoji;
+            btn.appendChild(iconEl);
+        }
+
+        // Add word text
+        var textEl = document.createElement('div');
+        textEl.className = 'word-card-text';
+        textEl.textContent = word;
+        btn.appendChild(textEl);
 
         if (isCustom) {
             var delBtn = document.createElement('div');
