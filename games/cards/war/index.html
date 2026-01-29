@@ -301,6 +301,44 @@
             font-size: 1.5em;
         }
 
+        .rules-modal {
+            max-width: 500px;
+        }
+        .rules-content {
+            text-align: left;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .rules-content h3 {
+            color: #fbbf24;
+            margin: 1rem 0 0.5rem;
+            font-size: 1rem;
+        }
+        .rules-content p, .rules-content ul, .rules-content ol {
+            margin: 0.5rem 0;
+            padding-left: 1.25rem;
+        }
+        .rules-content li {
+            margin: 0.25rem 0;
+        }
+        .rules-settings-header {
+            margin-top: 1.5rem !important;
+            padding-top: 1rem;
+            border-top: 1px solid #444;
+        }
+        .rules-settings {
+            background: rgba(0,0,0,0.3);
+            padding: 0.75rem 1rem !important;
+            border-radius: 8px;
+        }
+        .rules-settings strong {
+            color: #4ade80;
+        }
+        .setting-note {
+            color: #f87171;
+            margin-top: 0.25rem;
+        }
+
         .setting-row {
             display: flex;
             justify-content: space-between;
@@ -637,6 +675,7 @@
 <body>
     <div class="header">
         <h1>
+            <button id="btnRules" class="settings-btn" title="Rules">📖</button>
             <button id="btnResetGame" class="settings-btn" title="Reset Game">🔄</button>
             <button id="btnHistory" class="settings-btn" title="History">📊</button>
             <button id="btnSettings" class="settings-btn" title="Settings">⚙️</button>
@@ -741,6 +780,45 @@
             </div>
 
             <button id="btnCloseHistory" class="full-btn close-btn">Close</button>
+        </div>
+    </div>
+
+    <div id="rulesModal" class="modal-overlay hidden">
+        <div class="modal rules-modal">
+            <h2>📖 How to Play War</h2>
+            <div class="rules-content">
+                <h3>Objective</h3>
+                <p>Win all the cards by having the higher card in each battle.</p>
+
+                <h3>Card Rankings</h3>
+                <p>Ace (highest) → King → Queen → Jack → 10 → ... → 2 (lowest)</p>
+                <p id="rulesAceNote" class="setting-note hidden"><em>⚠️ Currently: 2 beats Ace</em></p>
+
+                <h3>Gameplay</h3>
+                <ol>
+                    <li><strong>Flip:</strong> Both players reveal their top card</li>
+                    <li><strong>Compare:</strong> Higher card wins both cards</li>
+                    <li><strong>Collect:</strong> Winner takes both cards to their pile</li>
+                    <li><strong>Repeat:</strong> Continue until one player has all cards</li>
+                </ol>
+
+                <h3>WAR!</h3>
+                <p>When both cards are equal:</p>
+                <ol>
+                    <li>Each player places <strong>3 cards face-down</strong></li>
+                    <li>Each player flips <strong>1 card face-up</strong></li>
+                    <li>Higher face-up card wins ALL cards (including the face-down ones)</li>
+                    <li>If tied again, another War begins!</li>
+                </ol>
+
+                <h3 class="rules-settings-header">Current Settings</h3>
+                <ul class="rules-settings">
+                    <li>Decks: <strong id="rulesDecks">1</strong></li>
+                    <li>2 beats Ace: <strong id="rulesTwosHigh">No</strong></li>
+                    <li>Auto-Shuffle: <strong id="rulesAutoShuffle">On</strong></li>
+                </ul>
+            </div>
+            <button id="btnCloseRules" class="full-btn primary-btn">Close</button>
         </div>
     </div>
 
@@ -856,6 +934,9 @@
                     winRate: document.getElementById('winRate'),
                     autoShuffleFlash: document.getElementById('autoShuffleFlash'),
                     flashMessage: document.getElementById('flashMessage'),
+                    rulesModal: document.getElementById('rulesModal'),
+                    btnRules: document.getElementById('btnRules'),
+                    btnCloseRules: document.getElementById('btnCloseRules'),
                     tabCurrentMatch: document.getElementById('tabCurrentMatch'),
                     tabPreviousMatches: document.getElementById('tabPreviousMatches'),
                     currentMatchTab: document.getElementById('currentMatchTab'),
@@ -901,6 +982,20 @@
                 this.el.historyModal.onclick = function(e) {
                     if (e.target === self.el.historyModal) {
                         self.el.historyModal.classList.add('hidden');
+                    }
+                };
+
+                // Rules Modal
+                this.el.btnRules.onclick = function() {
+                    self._updateRulesDisplay();
+                    self.el.rulesModal.classList.remove('hidden');
+                };
+                this.el.btnCloseRules.onclick = function() {
+                    self.el.rulesModal.classList.add('hidden');
+                };
+                this.el.rulesModal.onclick = function(e) {
+                    if (e.target === self.el.rulesModal) {
+                        self.el.rulesModal.classList.add('hidden');
                     }
                 };
 
@@ -1559,6 +1654,23 @@
                 // Update both tabs
                 this._renderCurrentMatchTab();
                 this._renderPreviousMatchesTab();
+            };
+
+            WarUI.prototype._updateRulesDisplay = function() {
+                // Update rules modal with current settings
+                document.getElementById('rulesDecks').textContent = WarRuleset.deckCount || 1;
+                document.getElementById('rulesTwosHigh').textContent = WarRuleset.twosHigh ? 'Yes' : 'No';
+                document.getElementById('rulesAutoShuffle').textContent = this.isEndlessMode ? 'On' : 'Off';
+
+                // Show/hide the "2 beats Ace" warning
+                var aceNote = document.getElementById('rulesAceNote');
+                if (aceNote) {
+                    if (WarRuleset.twosHigh) {
+                        aceNote.classList.remove('hidden');
+                    } else {
+                        aceNote.classList.add('hidden');
+                    }
+                }
             };
 
             // ========================================================================
