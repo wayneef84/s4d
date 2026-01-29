@@ -41,7 +41,7 @@ class WordGame {
         this.voiceRate = 0.9;
 
         // Data - UPDATED HERE
-        this.defaultWords = ["Kenzie", "Jennie", "Wayne", "Mom", "Dad", "Cat", "Dog", "Love", "Hi"];
+        this.defaultWords = ["Kenzie", "Jennie", "Wayne", "Mom", "Dad", "Tammy", "Phong", "Justin", "Linda", "Ed", "Toijee", "Wing", "Gina", "Jinwoo", "Oliver", "Gemma", "Cat", "Dog", "Love", "Hi", "Bye", "Butterfly", "Giraffe", "Elephant", "Rainbow", "Unicorn"];
         this.customWords = [];
         this.globalAudio = {};
 
@@ -321,6 +321,8 @@ class WordGame {
         this.wordImage.classList.add('hidden');
         this.imageArea.classList.remove('hidden');
     }
+
+    // TODO: GET Rid of this for a better option
 
     getEmojiForWord(word) {
         const emojiMap = {
