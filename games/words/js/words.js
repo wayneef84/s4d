@@ -746,10 +746,10 @@ class WordGame {
         }
 
         // Account for descenders (y, g, p, q, j go below baseline)
-        // Map y range from -10 to 120 (130 units total) instead of 0-100
-        var yMin = -10;
-        var yMax = 120;
-        var yRange = yMax - yMin; // 130
+        // Map y range from -5 to 140 (145 units total) to show full descenders
+        var yMin = -5;
+        var yMax = 140;
+        var yRange = yMax - yMin; // 145
 
         var offsetX = (w - boxW) / 2;
         var offsetY = (h - boxH) / 2;

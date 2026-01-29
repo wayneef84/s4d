@@ -220,8 +220,8 @@ const PACK_LOWERCASE = {
         "g": [
             { "type": "arc", "cx": 50, "cy": 70, "rx": 15, "ry": 12, "start": 45, "end": 405, "direction": "ccw" },
             { "type": "complex", "parts": [
-                 { "type": "line", "start": [65, 58], "end": [65, 95] },
-                 { "type": "arc", "cx": 50, "cy": 95, "rx": 15, "ry": 12, "start": 0, "end": 145 }
+                 { "type": "line", "start": [65, 58], "end": [65, 110] },
+                 { "type": "arc", "cx": 50, "cy": 110, "rx": 15, "ry": 18, "start": 0, "end": 145 }
             ]}
         ],
         "h": [
@@ -238,8 +238,8 @@ const PACK_LOWERCASE = {
         ],
         "j": [
             { "type": "complex", "parts": [
-                { "type": "line", "start": [50, 50], "end": [50, 100] },
-                { "type": "arc", "cx": 35, "cy": 100, "rx": 15, "ry": 15, "start": 0, "end": 150 }
+                { "type": "line", "start": [50, 50], "end": [50, 115] },
+                { "type": "arc", "cx": 35, "cy": 115, "rx": 15, "ry": 18, "start": 0, "end": 150 }
             ]},
             { "type": "line", "start": [50, 30], "end": [50, 31] } /* Dot */
         ],
@@ -272,7 +272,7 @@ const PACK_LOWERCASE = {
         ],
         "o": [ { "type": "arc", "cx": 50, "cy": 75, "rx": 25, "ry": 25, "start": -90, "end": 270 } ],
         "p": [
-            { "type": "line", "start": [25, 50], "end": [25, 120] },
+            { "type": "line", "start": [25, 50], "end": [25, 135] },
             { "type": "complex", "parts": [
                  { "type": "line", "start": [25, 95], "end": [25, 75] },
                  { "type": "arc", "cx": 50, "cy": 75, "rx": 25, "ry": 25, "start": 180, "end": 360 },
@@ -281,8 +281,8 @@ const PACK_LOWERCASE = {
         ],
         "q": [
             { "type": "arc", "cx": 50, "cy": 75, "rx": 25, "ry": 25, "start": 90, "end": 450, "direction": "ccw" },
-            { "type": "line", "start": [75, 50], "end": [75, 120] },
-            { "type": "line", "start": [75, 120], "end": [85, 110] }
+            { "type": "line", "start": [75, 50], "end": [75, 135] },
+            { "type": "line", "start": [75, 135], "end": [88, 120] }
         ],
         "r": [
             { "type": "line", "start": [30, 50], "end": [30, 100] },
@@ -319,7 +319,7 @@ const PACK_LOWERCASE = {
         "x": [ { "type": "line", "start": [25, 50], "end": [75, 100] }, { "type": "line", "start": [75, 50], "end": [25, 100] } ],
         "y": [
             { "type": "line", "start": [20, 50], "end": [50, 100] },
-            { "type": "line", "start": [80, 50], "end": [38, 120] }
+            { "type": "line", "start": [80, 50], "end": [30, 135] }
         ],
         "z": [
             { "type": "line", "start": [25, 50], "end": [75, 50] },
