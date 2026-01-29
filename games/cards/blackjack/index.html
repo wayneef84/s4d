@@ -627,6 +627,42 @@
             border: 2px solid #fbbf24;
             box-shadow: 0 0 30px rgba(251, 191, 36, 0.3);
         }
+        .rules-modal {
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .rules-content {
+            text-align: left;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .rules-content h3 {
+            color: #fbbf24;
+            margin: 1rem 0 0.5rem;
+            font-size: 1rem;
+        }
+        .rules-content p, .rules-content ul, .rules-content ol {
+            margin: 0.5rem 0;
+            padding-left: 1.25rem;
+        }
+        .rules-content li {
+            margin: 0.25rem 0;
+        }
+        .rules-settings-header {
+            margin-top: 1.5rem !important;
+            padding-top: 1rem;
+            border-top: 1px solid #444;
+        }
+        .rules-settings {
+            background: rgba(0,0,0,0.3);
+            padding: 0.75rem 1rem !important;
+            border-radius: 8px;
+        }
+        .rules-settings strong {
+            color: #4ade80;
+        }
+
         .insurance-modal h2 {
             color: #fbbf24;
             margin: 0 0 15px 0;
@@ -664,6 +700,7 @@
 <body>
     <header class="header">
         <h1>
+            <button id="btnRules" class="settings-btn">📖</button>
             <button id="btnHistory" class="settings-btn">📊</button>
             <button id="btnSettings" class="settings-btn">⚙️</button>
             Blackjack
@@ -810,6 +847,54 @@
         </div>
     </div>
 
+    <div id="rulesModal" class="modal-overlay hidden">
+        <div class="modal rules-modal">
+            <h2>📖 How to Play Blackjack</h2>
+            <div class="rules-content">
+                <h3>Objective</h3>
+                <p>Beat the dealer by getting a hand value closer to <strong id="rulesTarget">21</strong> without going over (busting).</p>
+
+                <h3>Card Values</h3>
+                <ul>
+                    <li><strong>Number cards (2-10):</strong> Face value</li>
+                    <li><strong>Face cards (J, Q, K):</strong> 10 points</li>
+                    <li><strong>Ace:</strong> 1 or 11 (whichever benefits you)</li>
+                </ul>
+
+                <h3>Gameplay</h3>
+                <ol>
+                    <li><strong>Place your bet</strong> using the chips</li>
+                    <li><strong>Deal:</strong> You and dealer each get 2 cards (one dealer card face-down)</li>
+                    <li><strong>Your turn:</strong> Hit (take card) or Stand (keep hand)</li>
+                    <li><strong>Dealer's turn:</strong> Dealer reveals hole card and must hit until reaching <strong id="rulesDealerStand">17</strong></li>
+                </ol>
+
+                <h3>Winning</h3>
+                <ul>
+                    <li><strong>Blackjack:</strong> Ace + 10-value card on first 2 cards (pays 3:2)</li>
+                    <li><strong>Win:</strong> Higher hand than dealer without busting (pays 1:1)</li>
+                    <li><strong>Push:</strong> Same value as dealer (bet returned)</li>
+                    <li><strong>Lose:</strong> Bust or lower than dealer</li>
+                </ul>
+
+                <h3>Special Actions</h3>
+                <ul>
+                    <li><strong>Double Down:</strong> Double your bet, receive exactly one more card</li>
+                    <li><strong>Insurance:</strong> When dealer shows Ace, bet half your wager against dealer blackjack (pays 2:1)</li>
+                </ul>
+
+                <h3 class="rules-settings-header">Current Settings</h3>
+                <ul class="rules-settings">
+                    <li>Decks in shoe: <strong id="rulesDecks">6</strong></li>
+                    <li>Target score: <strong id="rulesTargetSetting">21</strong></li>
+                    <li>Dealer stands on: <strong id="rulesDealerStandSetting">17</strong></li>
+                    <li>Reshuffle at: <strong id="rulesReshuffle">20</strong>% remaining</li>
+                </ul>
+            </div>
+            <button id="btnCloseRules" class="full-btn close-btn">Close</button>
+        </div>
+    </div>
+
     <script src="../shared/enums.js"></script>
     <script src="../shared/card-assets.js"></script>
     <script src="../shared/card.js"></script>
@@ -883,6 +968,9 @@
                     historyModal: document.getElementById('historyModal'),
                     btnHistory: document.getElementById('btnHistory'),
                     btnCloseHistory: document.getElementById('btnCloseHistory'),
+                    rulesModal: document.getElementById('rulesModal'),
+                    btnRules: document.getElementById('btnRules'),
+                    btnCloseRules: document.getElementById('btnCloseRules'),
                     tabCardCount: document.getElementById('tabCardCount'),
                     tabHandHistory: document.getElementById('tabHandHistory'),
                     cardCountPanel: document.getElementById('cardCountPanel'),
@@ -913,6 +1001,18 @@
                     this.el.historyModal.classList.remove('hidden');
                 };
                 this.el.btnCloseHistory.onclick = () => this.el.historyModal.classList.add('hidden');
+
+                // Rules modal
+                this.el.btnRules.onclick = () => {
+                    this._updateRulesDisplay();
+                    this.el.rulesModal.classList.remove('hidden');
+                };
+                this.el.btnCloseRules.onclick = () => this.el.rulesModal.classList.add('hidden');
+                this.el.rulesModal.onclick = (e) => {
+                    if (e.target === this.el.rulesModal) {
+                        this.el.rulesModal.classList.add('hidden');
+                    }
+                };
                 this.el.tabCardCount.onclick = () => this._showHistoryTab('cardCount');
                 this.el.tabHandHistory.onclick = () => this._showHistoryTab('handHistory');
 
@@ -1764,6 +1864,16 @@
                     this.el.handHistoryPanel.classList.remove('hidden');
                     this.el.cardCountPanel.classList.add('hidden');
                 }
+            }
+
+            _updateRulesDisplay() {
+                // Update rules modal with current settings
+                document.getElementById('rulesTarget').textContent = BlackjackRuleset.targetScore;
+                document.getElementById('rulesDealerStand').textContent = BlackjackRuleset.dealerStandThreshold;
+                document.getElementById('rulesDecks').textContent = BlackjackRuleset.deckCount;
+                document.getElementById('rulesTargetSetting').textContent = BlackjackRuleset.targetScore;
+                document.getElementById('rulesDealerStandSetting').textContent = BlackjackRuleset.dealerStandThreshold;
+                document.getElementById('rulesReshuffle').textContent = BlackjackRuleset.reshuffleThreshold;
             }
 
             _updateHistoryDisplay() {
